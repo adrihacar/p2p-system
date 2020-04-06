@@ -14,7 +14,7 @@ all: $(BIN_FILES)
 .PHONY : all
 
 server: server.o lines.o
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -I include /usr/lib/x86_64-linux-gnu/libsqlite3.so -o $@
 
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
