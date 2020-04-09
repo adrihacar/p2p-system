@@ -1,5 +1,8 @@
 import java.io.*;
 import gnu.getopt.Getopt;
+import java.lang.*;
+import java.net.*;
+import java.util.*;
 
 
 class client {
@@ -20,8 +23,31 @@ class client {
 	 */
 	static int register(String user) 
 	{
-		// Write your code here
+		int res = -1;
+		try{
+            Socket sc = new Socket(_server, _port);
+            OutputStream ostream = sc.getOutputStream();
+            ObjectOutput s = new ObjectOutputStream(ostream);
+			String op = "REGISTER"+'\0';
+			user = user + '\0';
+			s.writeObject(op);
+			s.flush();
+			s.writeObject(user);
+            res = ostream.readInt();
+			res = 0;
+			sc.close();
+        } catch (Exception e){
+            System.err.println("Exeption"+e.toString());
+            e.printStackTrace();
+        }
 		System.out.println("REGISTER " + user);
+		if (res == 0){
+			System.out.println("REGISTER OK");
+		}else if(res == 1){
+			System.out.println("USERNAME IN USE");
+		}else{
+			System.out.println("REGISTER FAIL");
+		}
 		return 0;
 	}
 	
@@ -32,8 +58,31 @@ class client {
 	 */
 	static int unregister(String user) 
 	{
-		// Write your code here
+		int res = -1;
+		try{
+            Socket sc = new Socket(_server, _port);
+            OutputStream ostream = sc.getOutputStream();
+            ObjectOutput s = new ObjectOutputStream(ostream);
+			String op = "UNREGISTER"+'\0';
+			user = user + '\0';
+			s.writeObject(op);
+			s.flush();
+			s.writeObject(user);
+            res = ostream.readInt();
+			res = 0;
+			sc.close();
+        } catch (Exception e){
+            System.err.println("Exeption"+e.toString());
+            e.printStackTrace();
+        }
 		System.out.println("UNREGISTER " + user);
+		if (res == 0){
+			System.out.println("UNREGISTER OK");
+		}else if(res == 1){
+			System.out.println("USER DOES NOT EXIST");
+		}else{
+			System.out.println("UNREGISTER FAIL");
+		}
 		return 0;
 	}
 	
@@ -44,7 +93,6 @@ class client {
 	 */
 	static int connect(String user) 
 	{
-		// Write your code here
 		System.out.println("CONNECT " + user);
 		return 0;
 	}
@@ -308,7 +356,7 @@ class client {
 			usage();
 			return;
 		}
-		
+
 		// Write code here
 		
 		shell();
