@@ -6,7 +6,7 @@ CC = gcc
 CCGLAGS =	-Wall  -g
 
 LDFLAGS = -L$(INSTALL_PATH)/lib/
-LDLIBS = -lpthread
+LDLIBS = -lpthread -lsqlite3
 
 
 all: CFLAGS=$(CCGLAGS)
@@ -14,7 +14,7 @@ all: $(BIN_FILES)
 .PHONY : all
 
 server: server.o lines.o
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -I include /usr/lib/x86_64-linux-gnu/libsqlite3.so -o $@
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
