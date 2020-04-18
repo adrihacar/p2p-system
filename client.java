@@ -1,5 +1,8 @@
 import java.io.*;
 import gnu.getopt.Getopt;
+import java.lang.*;
+import java.net.*;
+import java.util.*;
 
 
 class client {
@@ -7,8 +10,17 @@ class client {
 	
 	/******************* ATTRIBUTES *******************/
 	
-	private static String _server   = null;
+	private static String _server   = null; //server IP
 	private static int _port = -1;
+	private static int _server_port = 3333;
+	private static ServerSocket serverAddr = null;
+	private static int _listening_port = 6660;
+	private static String _upload_path = ".//files//uploaded_files";
+	private static String _downloads_path = ".//files//downloaded_files";
+	private static final int BUFFER_SIZE = 4096;
+	//Thread in charge of sending requested files
+	private static Thread listeningThread;
+
 		
 	
 	/********************* METHODS ********************/
@@ -20,8 +32,38 @@ class client {
 	 */
 	static int register(String user) 
 	{
-		// Write your code here
-		System.out.println("REGISTER " + user);
+		byte ans = -1;
+		try{
+            Socket sc = new Socket(_server, _port);
+            OutputStream ostream = sc.getOutputStream();
+			ObjectOutput s = new ObjectOutputStream(ostream);
+
+			InputStream istream = sc.getInputStream();
+			ObjectInput in = new ObjectInputStream(istream);
+			
+			String op = "REGISTER"+'\0';
+			user = user + '\0';
+
+			//Send request
+			s.writeChars(op);			
+			s.writeChars(user);
+			s.flush();
+
+			//Read answer from server
+            ans = in.readByte();
+			ans = 0;
+			sc.close();
+        } catch (Exception e){
+            System.err.println("Exeption"+e.toString());
+            e.printStackTrace();
+        }
+		if (ans == 0){
+			System.out.println("REGISTER OK");
+		}else if(ans == 1){
+			System.out.println("USERNAME IN USE");
+		}else{
+			System.out.println("REGISTER FAIL");
+		}
 		return 0;
 	}
 	
@@ -32,8 +74,35 @@ class client {
 	 */
 	static int unregister(String user) 
 	{
-		// Write your code here
-		System.out.println("UNREGISTER " + user);
+		byte ans = -1;
+		try{
+            Socket sc = new Socket(_server, _port);
+            OutputStream ostream = sc.getOutputStream();
+			ObjectOutput s = new ObjectOutputStream(ostream);
+			
+			DataInputStream iStream = new DataInputStream(sc.getInputStream());
+			//create request
+			String op = "UNREGISTER"+'\0';
+			user = user + '\0';
+			//send request			
+			s.writeChars(op);			
+			s.writeChars(user);
+			s.flush();
+			
+			//Read answer
+            ans = iStream.readByte();
+			sc.close();
+        } catch (Exception e){
+            System.err.println("Exeption"+e.toString());
+            e.printStackTrace();
+        }
+		if (ans == 0){
+			System.out.println("UNREGISTER OK");
+		}else if(ans == 1){
+			System.out.println("USER DOES NOT EXIST");
+		}else{
+			System.out.println("UNREGISTER FAIL");
+		}
 		return 0;
 	}
 	
@@ -44,10 +113,100 @@ class client {
 	 */
 	static int connect(String user) 
 	{
-		// Write your code here
-		System.out.println("CONNECT " + user);
-		return 0;
+				 		
+		//1. obtain the IP and a free port
+		//2. New ServerSocket()
+		try {			
+			serverAddr = new ServerSocket(_listening_port);
+		} catch(Exception exception){
+			System.err.println("Error creating socket");
+		}	
+		//Create thread to listen the request		
+		listeningThread = new Thread(){
+			public void run(){								
+				while(true){ //while(connected)
+					try {
+						//Accept connection from other user
+						Socket sc = serverAddr.accept();
+
+						//Read request
+						InputStream iStream = sc.getInputStream();
+						ObjectInput in = new ObjectInputStream(iStream);						
+
+						//Read the name of the file requested
+						String req_file = in.readLine();
+						
+						//Full path of the requested file
+						String _file_path = _upload_path + req_file;
+
+						//Prepare message to write the file
+						OutputStream oStream = sc.getOutputStream();
+						ObjectOutput out = new ObjectOutputStream(oStream);
+
+						//Reading the file to send
+						InputStream fileInput = new FileInputStream(_file_path);
+
+						byte [] buffer = new byte[BUFFER_SIZE];
+						
+						int b_read = 0;
+						while((b_read = fileInput.read(buffer))!= -1){
+							//send file
+							oStream.write(buffer, 0, b_read);
+						}						
+						out.flush();
+						fileInput.close();
+
+						sc.close();
+					} catch (Exception e) {
+						System.err.println("Exception " + e.toString());
+						e.printStackTrace();
+					}
+				}				
+			}
+		};
+		//4. Send request to server
+		
+		String op = "CONNECT"+'\0';
+		user = user + '\0';
+		byte ans = -1;
+		try {
+			//Establish connection with the server
+			Socket server_sc = new Socket(_server, _server_port);
+			DataOutputStream server_oStream = new DataOutputStream(server_sc.getOutputStream());
+
+			DataInputStream server_iStream = new DataInputStream(server_sc.getInputStream());
+			//Send req
+			server_oStream.writeChars(op);
+			server_oStream.writeChars(user);
+			server_oStream.flush();		
+
+			//5. Read answer from server
+			ans = server_iStream.readByte();
+
+			server_sc.close();
+			
+			} catch (Exception e) {
+			
+		}
+				
+		switch(ans){
+			case 0:
+				System.out.println("CONNECT OK");
+				break;
+			case 1:
+				System.out.println("CONNECT FAIL, USER DOES NOT EXISTS");
+				break;
+			case 2:
+				System.out.println("USER ALREADY CONNECTED");				
+				break;
+			default:
+				System.out.println("CONNECT FAIL");				
+				break;
+		}
+
+		return 0;		
 	}
+
 	
 	 /**
 	 * @param user - User name to disconnect from the system
@@ -56,8 +215,50 @@ class client {
 	 */
 	static int disconnect(String user) 
 	{
-		// Write your code here
-		System.out.println("DISCONNECT " + user);
+		byte  ans = -1;
+		try {
+			//1. close serverSocket
+			serverAddr.close();
+			//2. destroy thread
+			listeningThread.join();
+
+			//Connect to server
+			Socket sc = new Socket(_server, _server_port);			
+			//write request
+			OutputStream oStream = sc.getOutputStream();
+			ObjectOutput out = new ObjectOutputStream(oStream);
+			String op = "DISCONNECT"+'\0';
+			user = user + '\0'; //user to disconnect
+
+			out.writeChars(op);
+			out.writeChars(user);
+			out.flush();
+
+			//Read ans from server
+			InputStream iStream = sc.getInputStream();
+			ObjectInput in = new ObjectInputStream(iStream);
+			ans = in.readByte();
+
+			sc.close();
+
+		} catch (Exception e) {
+			System.err.println("Communication error with the server");
+			e.printStackTrace();
+		}
+		switch(ans){
+			case 0:
+				System.out.println("DISCONNECT OK");
+				break;
+			case 1:
+				System.out.println("DISCONNECT FAIL / USER DOES NOT EXISTS");
+				break;
+			case 2:
+				System.out.println("DISCONNECT FAIL / USER NOT CONNECTED");				
+				break;
+			default:
+				System.out.println("DISCONNECT FAIL");				
+				break;
+		}		
 		return 0;
 	}
 
@@ -69,8 +270,62 @@ class client {
 	 */
 	static int publish(String file_name, String description) 
 	{
-		// Write your code here
-		System.out.println("PUBLISH " + file_name + " " + description);
+		if (file_name.length() > 256){
+			System.out.println("PUBLISH FAIL, FILE NAME TOO LONG");
+			return 0;
+		}
+		if (description.length() > 256){
+			System.out.println("PUBLISH FAIL, DESCRIPTION NAME TOO LONG");
+			return 0;
+		}
+
+		byte  ans = -1;
+		try {
+			//1. close serverSocket
+			serverAddr.close();
+			//2. destroy thread
+			listeningThread.join();
+
+			//Connect to server
+			Socket sc = new Socket(_server, _server_port);			
+			//write request
+			OutputStream oStream = sc.getOutputStream();
+			ObjectOutput out = new ObjectOutputStream(oStream);
+			String op = "PUBLISH"+'\0';
+			file_name = file_name + '\0'; //user to disconnect
+
+			out.writeChars(op);
+			out.writeChars(file_name);
+			out.flush();
+
+			//Read ans from server
+			InputStream iStream = sc.getInputStream();
+			ObjectInput in = new ObjectInputStream(iStream);
+			ans = in.readByte();
+
+			sc.close();
+
+		} catch (Exception e) {
+			System.err.println("Communication error with the server");
+			e.printStackTrace();
+		}
+		switch(ans){
+			case 0:
+				System.out.println("PUBLISH OK");
+				break;
+			case 1:
+				System.out.println("PUBLISH FAIL, USER DOES NOT EXISTS");
+				break;
+			case 2:
+				System.out.println("PUBLISH FAIL, USER NOT CONNECTED");				
+				break;
+			case 3:
+				System.out.println("PUBLISH FAIL, CONTENT ALREDAY PUBLISHED");				
+				break;	
+			default:
+				System.out.println("PUBLISH FAIL");				
+				break;
+		}		
 		return 0;
 	}
 
@@ -81,8 +336,53 @@ class client {
 	 */
 	static int delete(String file_name)
 	{
-		// Write your code here
-		System.out.println("DELETE " + file_name);
+		byte  ans = -1;
+		try {
+			//1. close serverSocket
+			serverAddr.close();
+			//2. destroy thread
+			listeningThread.join();
+
+			//Connect to server
+			Socket sc = new Socket(_server, _server_port);			
+			//write request
+			OutputStream oStream = sc.getOutputStream();
+			ObjectOutput out = new ObjectOutputStream(oStream);
+			String op = "DELETE"+'\0';
+			file_name = file_name + '\0'; //user to disconnect
+
+			out.writeChars(op);
+			out.writeChars(file_name);
+			out.flush();
+
+			//Read ans from server
+			InputStream iStream = sc.getInputStream();
+			ObjectInput in = new ObjectInputStream(iStream);
+			ans = in.readByte();
+
+			sc.close();
+
+		} catch (Exception e) {
+			System.err.println("Communication error with the server");
+			e.printStackTrace();
+		}
+		switch(ans){
+			case 0:
+				System.out.println("DELETE OK");
+				break;
+			case 1:
+				System.out.println("DELETE FAIL, USER DOES NOT EXIST");
+				break;
+			case 2:
+				System.out.println("DELETE FAIL, USER NOT CONNECTED");				
+				break;
+			case 3:
+				System.out.println("DELETE FAIL, CONTENT NOT PUBLISHED");				
+				break;
+			case 4:
+				System.out.println("DELETE FAIL");				
+				break;
+		}		
 		return 0;
 	}
 
@@ -118,7 +418,37 @@ class client {
 	 */
 	static int get_file(String user_name, String remote_file_name, String local_file_name)
 	{
-		// Write your code here
+		
+		byte ans = -1;
+
+		//Stablish connection with server
+
+		//Create req
+
+
+		//1.Open socket(user, _listening_port)
+		//Write req = file name
+		//Read the contents of the file
+		//Create a new file with the same name in downloaded_files folder
+		//Copy the contents
+
+		//Read answer from server
+		
+
+		switch(ans){
+			case 0:
+				System.out.println("GET_FILE OK\n");
+				break;
+			case 1:
+				System.out.println("GET_FILE FAIL / FILE NOT EXISTS");
+				break;
+			default:
+				System.out.println("GET_FILE FAIL");
+				break;		
+		}
+
+
+		
 		System.out.println("GET_FILE " + user_name + " "  + remote_file_name + " " + local_file_name);
 		return 0;
 	}
@@ -308,7 +638,7 @@ class client {
 			usage();
 			return;
 		}
-		
+
 		// Write code here
 		
 		shell();
