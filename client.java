@@ -18,6 +18,7 @@ class client {
 	private static String _upload_path = ".//files//uploaded_files";
 	private static String _downloads_path = ".//files//downloaded_files";
 	private static final int BUFFER_SIZE = 4096;
+	private static final int NAME_SIZE = 256;
 	//Thread in charge of sending requested files
 	private static Thread listeningThread;
 
@@ -391,8 +392,55 @@ class client {
 	 */
 	static int list_users()
 	{
-		// Write your code here
-		System.out.println("LIST_USERS " );
+		byte ans = -1;
+		try{			 
+			//Connecto to the server
+			Socket sc = new Socket(_server, _server_port);
+
+			//Create request message
+			String op = "LIST_USERS" + '\0';
+
+			OutputStream oStream = sc.getOutputStream();
+			DataOutputStream out = new DataOutputStream(oStream);
+
+			InputStream iStream = sc.getInputStream();
+			//DataInputStream in = new DataInputStream(iStream);
+			ObjectInputStream in = new ObjectInputStream(iStream);
+
+			//Send request
+			out.writeChars(op);
+			
+			//Read answer
+			ans = in.readByte();
+
+			switch (ans) {
+				case 0: //Everything ok
+					System.out.println("LIST_USERS OK\n");
+					int numUsers = Integer.parseInt((String)in.readObject());
+					//Print the connected users
+					for(int i = 0; i < numUsers; i++){
+						//For each connected user 3 string are sent indicatng the name, IP and port
+						for (int j = 0; j < 3; j++){
+							String s = (String) in.readObject();
+						System.out.println(s + '\t');
+						}						
+					}						
+					break;
+				case 1:
+					System.out.println("LIST_USERS FAIL, USER DOES NOT EXIST");
+				case 2:
+					System.out.println("LIST_USERS FAIL, USER NOT CONNECTED");
+					break;
+				default:
+					System.out.println("LIST_USERS FAIL");
+					break;
+			}
+			//Close the connection with the server
+			sc.close();
+		} catch(Exception e){
+			System.err.println("Communication error with the server");
+			e.printStackTrace();
+		}
 		return 0;
 	}
 
@@ -404,8 +452,63 @@ class client {
 	 */
 	static int list_content(String user_name)
 	{
-		// Write your code here
-		System.out.println("LIST_CONTENT " + user_name);
+		byte ans = -1;
+		try{			 
+			//Connecto to the server
+			Socket sc = new Socket(_server, _server_port);
+
+			//Create request message			
+			 String op = "LIST_CONTENT" + '\0';
+			 user_name = user_name + '\0';
+
+			OutputStream oStream = sc.getOutputStream();
+			DataOutputStream out = new DataOutputStream(oStream);
+
+			InputStream iStream = sc.getInputStream();
+			//DataInputStream in = new DataInputStream(iStream);
+			ObjectInputStream in = new ObjectInputStream(iStream);
+
+			//Send request
+			out.writeChars(op); //operation code
+			out.writeChars(user_name); //User name
+			out.flush();
+			
+			//Read answer
+			ans = in.readByte();
+
+			switch (ans) {
+				case 0: //Everything ok
+					System.out.println("LIST_CONTENT OK\n");
+					int numFiles = Integer.parseInt((String)in.readObject());
+					//Print the connected users
+					for(int i = 0; i < numFiles; i++){
+						//For each file its name is sended
+						for (int j = 0; j < 3; j++){
+							byte fileName[] = new byte[NAME_SIZE];
+							in.read(fileName, 0, NAME_SIZE);
+							String s = String.valueOf(fileName);
+						System.out.println(s + '\n');
+						}						
+					}						
+					break;
+				case 1:
+					System.out.println("LIST_CONTENT FAIL, USER DOES NOT EXIST");
+				case 2:
+					System.out.println("LIST_CONTENT FAIL, USER NOT CONNECTED");
+					break;
+				case 3:
+					System.out.println("LIST_CONTENT FAIL, REMOTE USER DOES NOT EXIST");
+					break;					
+				default:
+					System.out.println("LIST_CONTENT FAIL");
+					break;
+			}
+			//Close the connection with the server
+			sc.close();
+		} catch(Exception e){
+			System.err.println("Communication error with the server");
+			e.printStackTrace();
+		}
 		return 0;
 	}
 
@@ -420,13 +523,65 @@ class client {
 	{
 		
 		byte ans = -1;
+		try{
+				
+			Socket sc_server = new Socket(_server, _server_port);
+			
+			String op = "GET_FILE" + '\0';
+			user_name = user_name + '\0';
+
+			DataOutputStream out = new DataOutputStream(sc_server.getOutputStream());
+			out.writeChars(op);
+			out.writeChars(user_name);
+			out.flush();
+
+			ObjectInputStream in = new ObjectInputStream(sc_server.getInputStream());
+			String clientAddr = (String) in.readObject();
+			int clientPort = in.readInt();
+
+			sc_server.close();
+
+			Socket sc_P2P = new Socket(clientAddr, clientPort);
+			String file_name = remote_file_name + '\0';
+			out = new DataOutputStream(sc_P2P.getOutputStream());
+			out.writeChars(file_name);
+			out.flush();
+
+			//Read answer from the other client
+			ans = in.readByte();
+
+			switch (ans) {
+				case 0:
+					OutputStream fStream = new FileOutputStream(local_file_name);
+					ObjectOutputStream objOut = new ObjectOutputStream(fStream);
+					
+
+					System.out.println("GET_FILE OK");
+					//??How to send a whole file
+					File f = new File(_downloads_path + local_file_name);					
+					f = (File) in.readObject();
+
+					objOut.writeObject(f);
+					objOut.flush();
+					break;
+				case 1:
+					System.out.println("GET_FILE FAIL / FILE NOT EXIST");
+					break;				
+				default:
+					System.out.println("GET_FILE FAIL");
+					break;
+			}
+			sc_P2P.close();
+			
+		}catch(Exception e){
+			System.err.println(e);
+			e.printStackTrace();
+		}
 
 		//Stablish connection with server
 
 		//Create req
-
-
-		//1.Open socket(user, _listening_port)
+		//Open socket(user, _listening_port)
 		//Write req = file name
 		//Read the contents of the file
 		//Create a new file with the same name in downloaded_files folder
@@ -446,10 +601,7 @@ class client {
 				System.out.println("GET_FILE FAIL");
 				break;		
 		}
-
-
-		
-		System.out.println("GET_FILE " + user_name + " "  + remote_file_name + " " + local_file_name);
+		//System.out.println("GET_FILE " + user_name + " "  + remote_file_name + " " + local_file_name);
 		return 0;
 	}
 
