@@ -16,13 +16,22 @@
 //int rc;	/*used to check return codes from database*/
 sqlite3 *db; /*database object*/
 
-
-
+//TODO put mutex database
+//TODO change the ip to connect not just from localhost
+//TODO put mutex to protect s_local
 struct sockaddr_in server_addr, client_addr;
 int sd;
 //char buffer[256];
 int  val, size;
 
+
+/* CALLBACK function from the count query*/
+int count_rows(void *count, int argc, char **argv, char **azColName){
+	int *count_int= count;
+	*count_int= atoi(argv[0]);
+	
+	return 0;
+}
 /* executed by each thread to process the request*/
 void process_request(int * sc){
 	int rc;	/*used to check return codes from database*/
@@ -30,17 +39,15 @@ void process_request(int * sc){
 
 	char user_name[256];
 	char operation[256];
-//	char client_port[8];
 
 	recibir(s_local,operation,sizeof(operation));
 	recibir(s_local,user_name,sizeof(user_name));
-//	recibir(s_local,client_port,sizeof(client_port));
 
 	puts("All data read, inserting in database");
 	if(strcmp(operation, "REGISTER") == 0){
 		char *zErrMsg = 0;
 		/* We use this method instead of sprintf() to avoid sqlInjection*/
-		char *query= sqlite3_mprintf("INSERT INTO USERS(USER_NAME, CONNECTED) VALUES('%q', 0);", user_name);
+		char *query= sqlite3_mprintf("INSERT INTO USERS(USER_NAME) VALUES('%q');", user_name);
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
 		if( rc != SQLITE_OK ){
 			if(strcmp(zErrMsg,"SQL error: UNIQUE constraint failed: USERS.USER_NAME")){
@@ -115,7 +122,6 @@ void process_request(int * sc){
    		}
 
 
-
 	}else if(strcmp(operation, "DELETE") == 0){
 		char file_name[256];
 
@@ -138,28 +144,94 @@ void process_request(int * sc){
    		}
 
 	}else if(strcmp(operation, "LIST_USERS") == 0){
+		char *zErrMsg = 0;
+		int num_users=0;
+		/*FIRST WE RETRIEVE THE NUMBER OF THE USERS WITH COUNT*/
+		char * query= "SELECT COUNT(*) FROM USERS";
+
+		rc = sqlite3_exec(db, query, count_rows, &num_users, &zErrMsg);
+		if( rc != SQLITE_OK ){
+				fprintf(stderr, "SQL error: %s\n", zErrMsg);
+		}
+
+		sqlite3_stmt *res;
+		
+		char *sql = "SELECT * FROM USERS";
+    	rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
+        if(rc != SQLITE_OK){
+        	fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		}
+			//TODO send number of rows
+   		int step = sqlite3_step(res);
+    	if (step == SQLITE_ROW) {
+			//TODO send back responses
+		}
 
 	}else if(strcmp(operation, "LIST_CONTENT") == 0){
+		char *zErrMsg = 0;
+		char user_content[256];
+		recibir(s_local,user_content, sizeof(user_content));
 
+		int num_content=0;
+		char * query= sqlite3_mprintf("SELECT COUNT(*) FROM %q",user_content);
+		//TODO check that the user exists
+
+		rc = sqlite3_exec(db, query, count_rows, &num_content, &zErrMsg);
+		if( rc != SQLITE_OK ){
+				fprintf(stderr, "SQL error: %s\n", zErrMsg);
+		}
+		
+		sqlite3_stmt *res;
+		
+		char *sql =sqlite3_mprintf("SELECT * FROM %q", user_content ) ;
+    	rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
+        if(rc != SQLITE_OK){
+        	fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		}
+    
+   		int step = sqlite3_step(res);
+    	if (step == SQLITE_ROW) {
+			//TODO send back responses
+		}
 
 	}else if(strcmp(operation, "CONNECT") == 0){
-		
+		char client_port[8];
+		recibir(s_local,client_port,sizeof(client_port));
 
+		char *zErrMsg = 0;
+		/* We use this method instead of sprintf() to avoid sqlInjection*/
+		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = %q WHERE USER_NAME = %q",client_port,user_name);
+		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+		if( rc != SQLITE_OK ){
+			if(strcmp(zErrMsg,"")){ //TODO Check that the error code is in case it doesn't find it 
+				/*If we are here in means that user is already in database so in cannot connect again*/
+				/*send the response to the client a close this socket*/
+			}else{
+				fprintf(stderr, "SQL error: %s\n", zErrMsg);
+			}
+     	
+        sqlite3_free(zErrMsg);
+   		}
 
 	}else if(strcmp(operation, "DISCONNECT") == 0){
-
+		char *zErrMsg = 0;
+		/* We use this method instead of sprintf() to avoid sqlInjection*/
+		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = NULL WHERE USER_NAME = %q",user_name);
+		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+		if( rc != SQLITE_OK ){
+			if(strcmp(zErrMsg,"")){ //TODO Check that the error code is in case it doesn't find it 
+				/*If we are here in means that user is already in database so in cannot connect again*/
+				/*send the response to the client a close this socket*/
+			}else{
+				fprintf(stderr, "SQL error: %s\n", zErrMsg);
+			}
+     	
+        sqlite3_free(zErrMsg);
+   		}
 	}else{
 
 	}
 
-	
-	
-		
-	
-	
-	
-	
-	
 
 	close(s_local);
 		
@@ -193,7 +265,7 @@ void init_database(){
 	char *zErrMsg = 0;
 	char * init_query="CREATE TABLE USERS("  \
       "USER_NAME TEXT PRIMARY KEY     NOT NULL," \
-	  "CONNECTED INT NOT NULL);";
+	  "PORT TEXT);";
 
 	remove("database.db");
 	rc = sqlite3_open("database.db", &db);
@@ -255,4 +327,3 @@ int main(int argc, char *argv[]) {
 	sqlite3_close(db);
 	return 0;
 }
-	
