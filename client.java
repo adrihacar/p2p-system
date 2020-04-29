@@ -33,7 +33,7 @@ class client {
 	 */
 	static int register(String user) 
 	{
-		byte ans = -1;
+		char ans = '1';
 		try{
             Socket sc = new Socket(_server, _port);
             OutputStream ostream = sc.getOutputStream();
@@ -51,20 +51,24 @@ class client {
 			s.flush();
 
 			//Read answer from server
-            ans = in.readByte();
+            ans = (char)in.read();
 			ans = 0;
 			sc.close();
         } catch (Exception e){
             System.err.println("Exeption"+e.toString());
             e.printStackTrace();
         }
-		if (ans == 0){
-			System.out.println("REGISTER OK");
-		}else if(ans == 1){
-			System.out.println("USERNAME IN USE");
-		}else{
-			System.out.println("REGISTER FAIL");
-		}
+        switch(ans){
+            case '0':
+                System.out.println("REGISTER OK");
+                break;
+            case '1':
+                System.out.println("USERNAME IN USE");
+                break;
+            default:
+                System.out.println("REGISTER FAIL");
+                break;
+        }
 		return 0;
 	}
 	
@@ -75,7 +79,7 @@ class client {
 	 */
 	static int unregister(String user) 
 	{
-		byte ans = -1;
+		char ans = '1';
 		try{
             Socket sc = new Socket(_server, _port);
             OutputStream ostream = sc.getOutputStream();
@@ -91,19 +95,23 @@ class client {
 			s.flush();
 			
 			//Read answer
-            ans = iStream.readByte();
+            ans = (char)iStream.read();
 			sc.close();
         } catch (Exception e){
             System.err.println("Exeption"+e.toString());
             e.printStackTrace();
         }
-		if (ans == 0){
-			System.out.println("UNREGISTER OK");
-		}else if(ans == 1){
-			System.out.println("USER DOES NOT EXIST");
-		}else{
-			System.out.println("UNREGISTER FAIL");
-		}
+        switch(ans){
+            case '0':
+                System.out.println("UNREGISTER OK");
+                break;
+           case '1':
+                System.out.println("USER DOES NOT EXIST");
+                break;
+            default:
+                System.out.println("UNREGISTER FAIL");
+                break;
+        }
 		return 0;
 	}
 	
@@ -169,7 +177,7 @@ class client {
 		
 		String op = "CONNECT"+'\0';
 		user = user + '\0';
-		byte ans = -1;
+		char ans = '1';
 		try {
 			//Establish connection with the server
 			Socket server_sc = new Socket(_server, _server_port);
@@ -182,7 +190,7 @@ class client {
 			server_oStream.flush();		
 
 			//5. Read answer from server
-			ans = server_iStream.readByte();
+			ans = (char)server_iStream.read();
 
 			server_sc.close();
 			
@@ -191,13 +199,13 @@ class client {
 		}
 				
 		switch(ans){
-			case 0:
+			case '0':
 				System.out.println("CONNECT OK");
 				break;
-			case 1:
+			case '1':
 				System.out.println("CONNECT FAIL, USER DOES NOT EXISTS");
 				break;
-			case 2:
+			case '2':
 				System.out.println("USER ALREADY CONNECTED");				
 				break;
 			default:
@@ -216,7 +224,7 @@ class client {
 	 */
 	static int disconnect(String user) 
 	{
-		byte  ans = -1;
+		char ans = '1';
 		try {
 			//1. close serverSocket
 			serverAddr.close();
@@ -238,7 +246,7 @@ class client {
 			//Read ans from server
 			InputStream iStream = sc.getInputStream();
 			ObjectInput in = new ObjectInputStream(iStream);
-			ans = in.readByte();
+			ans = (char)in.read();
 
 			sc.close();
 
@@ -247,13 +255,13 @@ class client {
 			e.printStackTrace();
 		}
 		switch(ans){
-			case 0:
+			case '0':
 				System.out.println("DISCONNECT OK");
 				break;
-			case 1:
+			case '1':
 				System.out.println("DISCONNECT FAIL / USER DOES NOT EXISTS");
 				break;
-			case 2:
+			case '2':
 				System.out.println("DISCONNECT FAIL / USER NOT CONNECTED");				
 				break;
 			default:
@@ -280,7 +288,7 @@ class client {
 			return 0;
 		}
 
-		byte  ans = -1;
+		char ans = '1';
 		try {
 			//1. close serverSocket
 			serverAddr.close();
@@ -302,7 +310,7 @@ class client {
 			//Read ans from server
 			InputStream iStream = sc.getInputStream();
 			ObjectInput in = new ObjectInputStream(iStream);
-			ans = in.readByte();
+			ans = (char)in.read();
 
 			sc.close();
 
@@ -311,16 +319,16 @@ class client {
 			e.printStackTrace();
 		}
 		switch(ans){
-			case 0:
+			case '0':
 				System.out.println("PUBLISH OK");
 				break;
-			case 1:
+			case '1':
 				System.out.println("PUBLISH FAIL, USER DOES NOT EXISTS");
 				break;
-			case 2:
+			case '2':
 				System.out.println("PUBLISH FAIL, USER NOT CONNECTED");				
 				break;
-			case 3:
+			case '3':
 				System.out.println("PUBLISH FAIL, CONTENT ALREDAY PUBLISHED");				
 				break;	
 			default:
@@ -337,7 +345,7 @@ class client {
 	 */
 	static int delete(String file_name)
 	{
-		byte  ans = -1;
+		char ans = '1';
 		try {
 			//1. close serverSocket
 			serverAddr.close();
@@ -359,7 +367,7 @@ class client {
 			//Read ans from server
 			InputStream iStream = sc.getInputStream();
 			ObjectInput in = new ObjectInputStream(iStream);
-			ans = in.readByte();
+			ans = (char)in.read();
 
 			sc.close();
 
@@ -368,19 +376,19 @@ class client {
 			e.printStackTrace();
 		}
 		switch(ans){
-			case 0:
+			case '0':
 				System.out.println("DELETE OK");
 				break;
-			case 1:
+			case '1':
 				System.out.println("DELETE FAIL, USER DOES NOT EXIST");
 				break;
-			case 2:
+			case '2':
 				System.out.println("DELETE FAIL, USER NOT CONNECTED");				
 				break;
-			case 3:
+			case '3':
 				System.out.println("DELETE FAIL, CONTENT NOT PUBLISHED");				
 				break;
-			case 4:
+			case '4':
 				System.out.println("DELETE FAIL");				
 				break;
 		}		
@@ -392,7 +400,7 @@ class client {
 	 */
 	static int list_users()
 	{
-		byte ans = -1;
+		char ans = '1';
 		try{			 
 			//Connecto to the server
 			Socket sc = new Socket(_server, _server_port);
@@ -411,7 +419,7 @@ class client {
 			out.writeChars(op);
 			
 			//Read answer
-			ans = in.readByte();
+			ans = (char)in.read();
 
 			switch (ans) {
 				case 0: //Everything ok
@@ -426,9 +434,9 @@ class client {
 						}						
 					}						
 					break;
-				case 1:
+				case '1':
 					System.out.println("LIST_USERS FAIL, USER DOES NOT EXIST");
-				case 2:
+				case '2':
 					System.out.println("LIST_USERS FAIL, USER NOT CONNECTED");
 					break;
 				default:
@@ -452,7 +460,7 @@ class client {
 	 */
 	static int list_content(String user_name)
 	{
-		byte ans = -1;
+		char ans = '1';
 		try{			 
 			//Connecto to the server
 			Socket sc = new Socket(_server, _server_port);
@@ -474,10 +482,10 @@ class client {
 			out.flush();
 			
 			//Read answer
-			ans = in.readByte();
+			ans = (char)in.read();
 
 			switch (ans) {
-				case 0: //Everything ok
+				case '0': //Everything ok
 					System.out.println("LIST_CONTENT OK\n");
 					int numFiles = Integer.parseInt((String)in.readObject());
 					//Print the connected users
@@ -491,12 +499,12 @@ class client {
 						}						
 					}						
 					break;
-				case 1:
+				case '1':
 					System.out.println("LIST_CONTENT FAIL, USER DOES NOT EXIST");
-				case 2:
+				case '2':
 					System.out.println("LIST_CONTENT FAIL, USER NOT CONNECTED");
 					break;
-				case 3:
+				case '3':
 					System.out.println("LIST_CONTENT FAIL, REMOTE USER DOES NOT EXIST");
 					break;					
 				default:
@@ -522,7 +530,7 @@ class client {
 	static int get_file(String user_name, String remote_file_name, String local_file_name)
 	{
 		
-		byte ans = -1;
+		char ans = '1';
 		try{
 				
 			Socket sc_server = new Socket(_server, _server_port);
@@ -548,7 +556,7 @@ class client {
 			out.flush();
 
 			//Read answer from the other client
-			ans = in.readByte();
+			ans = (char)in.read();
 
 			switch (ans) {
 				case 0:
@@ -591,10 +599,10 @@ class client {
 		
 
 		switch(ans){
-			case 0:
+			case '0':
 				System.out.println("GET_FILE OK\n");
 				break;
-			case 1:
+			case '1':
 				System.out.println("GET_FILE FAIL / FILE NOT EXISTS");
 				break;
 			default:
