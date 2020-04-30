@@ -16,13 +16,71 @@
 //int rc;	/*used to check return codes from database*/
 sqlite3 *db; /*database object*/
 
-//TODO put mutex database
-//TODO change the ip to connect not just from localhost
-//TODO put mutex to protect s_local
+pthread_mutex_t mux_database;
+//mutex to protect access to database
+
+//TODO put mutex
+//TODO checkear lo de la ip que sea publica
+//TODO mutex to copy local variable?
 struct sockaddr_in server_addr, client_addr;
 int sd;
 //char buffer[256];
 int  val, size;
+
+
+/* Check if user exist */
+int user_exists(char *user){
+	int res=1; /* 1 true, 0 false*/
+	char *zErrMsg = 0;
+	int rc;
+	/* We use this method instead of sprintf() to avoid sqlInjection*/
+	char *query= sqlite3_mprintf("SELECT * FROM %q", user);
+
+	rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+	if( rc != SQLITE_OK ){
+		res=0;
+	}
+
+	return res;
+}
+
+/*check if user is connected */
+int user_connected(char *user){
+	int result=0; /* 1 true, 0 false*/
+	int rc;
+	
+	sqlite3_stmt *res;
+
+	char *sql = sqlite3_mprintf("SELECT * FROM USERS WHERE USER_NAME='%q' AND PORT IS NOT NULL", user);
+    rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
+    if(rc != SQLITE_OK){
+       	fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+	}
+   	int step = sqlite3_step(res);
+    if (step == SQLITE_ROW) {
+		result = 1;
+	}
+
+	return result;
+}
+int file_exists(char *file, char *user){
+	int result=0; /* 1 true, 0 false*/
+	int rc;
+	
+	sqlite3_stmt *res;
+
+	char *sql = sqlite3_mprintf("SELECT * FROM %q WHERE FILE_NAME = '%q'", user, file);
+    rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
+    if(rc != SQLITE_OK){
+       	fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+	}
+   	int step = sqlite3_step(res);
+    if (step == SQLITE_ROW) {
+		result = 1;
+	}
+
+	return result;
+}
 
 
 /* CALLBACK function from the count query*/
@@ -37,6 +95,7 @@ void process_request(int * sc){
 	int rc;	/*used to check return codes from database*/
 	int s_local = *sc;
 
+	char code = '5'; /*code returned to client*/
 	char user_name[256];
 	char operation[256];
 
@@ -48,15 +107,23 @@ void process_request(int * sc){
 		char *zErrMsg = 0;
 		/* We use this method instead of sprintf() to avoid sqlInjection*/
 		char *query= sqlite3_mprintf("INSERT INTO USERS(USER_NAME) VALUES('%q');", user_name);
+
+		pthread_mutex_lock(&mux_database);
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+
 		if( rc != SQLITE_OK ){
-			if(strcmp(zErrMsg,"SQL error: UNIQUE constraint failed: USERS.USER_NAME")){
+			if(strstr(zErrMsg,"SQL error: UNIQUE constraint failed: USERS.USER_NAME") == 0){
 				/*If we are here in means that user is already in database so in cannot connect again*/
 				/*send the response to the client a close this socket*/
+				code='1';
+				
 			}else{
+				code='2';
 				fprintf(stderr, "SQL error: %s\n", zErrMsg);
 			}
-     	
+		pthread_mutex_unlock(&mux_database);
+		enviar(s_local,&code,sizeof(code));
+		close(s_local);
         sqlite3_free(zErrMsg);
    		}
 
@@ -66,39 +133,69 @@ void process_request(int * sc){
 		"FILE_DESCRIPTION TEXT NOT NULL);", user_name);
 
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+		pthread_mutex_unlock(&mux_database);
+
 		if( rc != SQLITE_OK ){
      		fprintf(stderr, "SQL error: %s\n", zErrMsg);
       		sqlite3_free(zErrMsg);
+
+			code='2';
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+			pthread_exit(NULL);
 		}
+		code='0';
+		enviar(s_local,&code,sizeof(code));
+		close(s_local);
 
    	}else if(strcmp(operation, "UNREGISTER") == 0){
 		char *zErrMsg = 0;
 		/* We use this method instead of sprintf() to avoid sqlInjection*/
-		char *query= sqlite3_mprintf("DELETE FROM USERS WHERE USER_NAME='%q';", user_name);
+		char * query= sqlite3_mprintf("DROP TABLE %q;", user_name);
+		
+
+		/* We delete the table*/
+		pthread_mutex_lock(&mux_database);
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+
 		if( rc != SQLITE_OK ){
-			if(strcmp(zErrMsg,"")){  //TODO check message
-				/*If we are here in means that user is not in the database*/
-				/*send the response to the client a close this socket*/
+			if(strstr(zErrMsg, "no such table")){ 
+				code ='1';
 			}else{
 				fprintf(stderr, "SQL error: %s\n", zErrMsg);
+				code ='2';
 			}
-     	
+		pthread_mutex_unlock(&mux_database);
         sqlite3_free(zErrMsg);
+		enviar(s_local,&code,sizeof(code));
+		/*send the response to the client a close this socket*/
+		close(s_local);
+		pthread_exit(NULL);
    		}
-  
-		/* We delete the table*/
-		query= sqlite3_mprintf("DROP TABLE %q;", user_name);
+
+		query= sqlite3_mprintf("DELETE FROM USERS WHERE USER_NAME='%q';", user_name);
 
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-		if( rc != SQLITE_OK ){
-     		fprintf(stderr, "SQL error: %s\n", zErrMsg);
-      		sqlite3_free(zErrMsg);
-		}
+		pthread_mutex_unlock(&mux_database);
 
+		if( rc != SQLITE_OK ){
+      		sqlite3_free(zErrMsg);
+			code='2';
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+			pthread_exit(NULL);
+		}
+  
+
+		code='0';
+		enviar(s_local,&code,sizeof(code));
+		close(s_local);
 
 
 	}else if(strcmp(operation, "PUBLISH") == 0){
+		code ='4';
 		char file_name[256];
 		char file_description[256];
 
@@ -107,74 +204,169 @@ void process_request(int * sc){
 
 		char *zErrMsg = 0;
 
-		char *query= sqlite3_mprintf("INSERT INTO %q(FILE_NAME, FILE_DESCRIPTION) VALUES(%q, %q);",user_name, file_name, file_description);
+		pthread_mutex_lock(&mux_database);
 
-		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-		if( rc != SQLITE_OK ){
-			if(strcmp(zErrMsg,"SQL error: UNIQUE constraint failed: USERS.USER_NAME")){
-				/*If we are here in means that user is already in database so in cannot connect again*/
-				/*send the response to the client a close this socket*/
-			}else{
+		if(user_exists(user_name) == 0){
+			code='1';
+		}if(user_connected(user_name) == 0){
+			code='2';
+		}else if(file_exists(file_name,user_name) == 1){
+			code='3';
+		}else{
+			char *query= sqlite3_mprintf("INSERT INTO %q(FILE_NAME, FILE_DESCRIPTION) VALUES(%q, %q);",user_name, file_name, file_description);
+
+			rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+
+			if( rc != SQLITE_OK ){
 				fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        		sqlite3_free(zErrMsg);
+   			}else{
+				code='0';
 			}
-     	
-        sqlite3_free(zErrMsg);
-   		}
+		}
+		pthread_mutex_unlock(&mux_database);
+		enviar(s_local,&code,sizeof(code));
+		close(s_local);
 
 
 	}else if(strcmp(operation, "DELETE") == 0){
+		code ='4';
 		char file_name[256];
 
 		recibir(s_local,file_name,sizeof(file_name));
 
 		char *zErrMsg = 0;
 
+		pthread_mutex_lock(&mux_database);
+
+		if(user_exists(user_name) == 0){
+			code='1';
+		}else if(user_connected(user_name) == 0){
+			code='2';
+
+		}else if(file_exists(file_name,user_name) == 0){
+			code='3';
+
+		}else{
+
+
 		char *query= sqlite3_mprintf("DELETE FROM %q WHERE FILE_NAME=%q;",user_name, file_name);
 		
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
 		if( rc != SQLITE_OK ){
-			if(strcmp(zErrMsg,"SQL error: UNIQUE constraint failed: USERS.USER_NAME")){
-				/*If we are here in means that user is already in database so in cannot connect again*/
-				/*send the response to the client a close this socket*/
-			}else{
-				fprintf(stderr, "SQL error: %s\n", zErrMsg);
-			}
-     	
-        sqlite3_free(zErrMsg);
-   		}
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        	sqlite3_free(zErrMsg);
+   		}else{
+			 code='0';
+		   }
+		}
+		pthread_mutex_unlock(&mux_database);
+		enviar(s_local,&code,sizeof(code));
+		close(s_local);
+
 
 	}else if(strcmp(operation, "LIST_USERS") == 0){
 		char *zErrMsg = 0;
 		int num_users=0;
+		char buf[256];
+
+		pthread_mutex_lock(&mux_database);
+
+		if(user_exists(user_name) == 0){
+			code='1';
+			pthread_mutex_unlock(&mux_database);
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			pthread_exit(NULL);
+		}if(user_connected(user_name) == 0){
+			code='2';
+			pthread_mutex_unlock(&mux_database);
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			pthread_exit(NULL);
+		}else{
+
 		/*FIRST WE RETRIEVE THE NUMBER OF THE USERS WITH COUNT*/
-		char * query= "SELECT COUNT(*) FROM USERS";
+		char * query= "SELECT COUNT(*) FROM USERS WHERE PORT IS NOT NULL";
 
 		rc = sqlite3_exec(db, query, count_rows, &num_users, &zErrMsg);
 		if( rc != SQLITE_OK ){
-				fprintf(stderr, "SQL error: %s\n", zErrMsg);
+			code='3';
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+			pthread_exit(NULL);
 		}
 
 		sqlite3_stmt *res;
 		
-		char *sql = "SELECT * FROM USERS";
+		char *sql = "SELECT * FROM USERS WHERE PORT IS NOT NULL";
     	rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
         if(rc != SQLITE_OK){
+			code='3';
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			pthread_mutex_unlock(&mux_database);
         	fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+			pthread_exit(NULL);
 		}
-			//TODO send number of rows
+			code='0';
+			enviar(s_local,&code,sizeof(code));
+
+
+			sprintf(buf, "%d", num_users);
+			enviar(s_local,buf,strlen(buf)+1);
+
    		int step = sqlite3_step(res);
-    	if (step == SQLITE_ROW) {
-			//TODO send back responses
+    	while (step == SQLITE_ROW) {
+
+			sprintf(buf, "%s", sqlite3_column_text(res, 0));
+			enviar(s_local,buf,strlen(buf)+1);
+
+			sprintf(buf, "%s", sqlite3_column_text(res, 1));
+			enviar(s_local,buf,strlen(buf)+1);
+
+			sprintf(buf, "%s", sqlite3_column_text(res, 2));
+			enviar(s_local,buf,strlen(buf)+1);
+
+			step = sqlite3_step(res);
+		}
+		pthread_mutex_unlock(&mux_database);
+		close(s_local);
 		}
 
-	}else if(strcmp(operation, "LIST_CONTENT") == 0){
+	}else if(strcmp(operation, "LIST_CONTENT") == 0){//TODO lock mutex
+		char buf[256];
 		char *zErrMsg = 0;
 		char user_content[256];
+
+
 		recibir(s_local,user_content, sizeof(user_content));
+
+		if(user_exists(user_name) == 0){
+			code='1';
+			pthread_mutex_unlock(&mux_database);
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			pthread_exit(NULL);
+		}else if(user_connected(user_name) == 0){
+			code='2';
+			pthread_mutex_unlock(&mux_database);
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			pthread_exit(NULL);
+		}else if(user_exists(user_content) == 0){
+			code='3';
+			pthread_mutex_unlock(&mux_database);
+			enviar(s_local,&code,sizeof(code));
+			close(s_local);
+			pthread_exit(NULL);
+
+		}else{
+
 
 		int num_content=0;
 		char * query= sqlite3_mprintf("SELECT COUNT(*) FROM %q",user_content);
-		//TODO check that the user exists
 
 		rc = sqlite3_exec(db, query, count_rows, &num_content, &zErrMsg);
 		if( rc != SQLITE_OK ){
@@ -188,53 +380,80 @@ void process_request(int * sc){
         if(rc != SQLITE_OK){
         	fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
 		}
+
+		code='0';
+		enviar(s_local,&code,sizeof(code));
+
+		sprintf(buf, "%d", num_content);
+		enviar(s_local,buf,strlen(buf)+1);
     
    		int step = sqlite3_step(res);
-    	if (step == SQLITE_ROW) {
-			//TODO send back responses
+    	while(step == SQLITE_ROW) {
+			sprintf(buf, "%s", sqlite3_column_text(res, 0));
+			enviar(s_local,buf,strlen(buf)+1);
+			step = sqlite3_step(res);
+		}
 		}
 
-	}else if(strcmp(operation, "CONNECT") == 0){
+	}else if(strcmp(operation, "CONNECT") == 0){//TODO test
 		char client_port[8];
 		recibir(s_local,client_port,sizeof(client_port));
 
-		char *zErrMsg = 0;
-		/* We use this method instead of sprintf() to avoid sqlInjection*/
-		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = %q WHERE USER_NAME = %q",client_port,user_name);
-		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-		if( rc != SQLITE_OK ){
-			if(strcmp(zErrMsg,"")){ //TODO Check that the error code is in case it doesn't find it 
-				/*If we are here in means that user is already in database so in cannot connect again*/
-				/*send the response to the client a close this socket*/
-			}else{
-				fprintf(stderr, "SQL error: %s\n", zErrMsg);
-			}
-     	
-        sqlite3_free(zErrMsg);
-   		}
+		code='3';
 
-	}else if(strcmp(operation, "DISCONNECT") == 0){
 		char *zErrMsg = 0;
+		pthread_mutex_lock(&mux_database);
+
+		if(user_exists(user_name) == 0){
+			code='1';
+		}if(user_connected(user_name) == 1){
+			code='2';
+		}else{
+			/* We use this method instead of sprintf() to avoid sqlInjection*/
+			char *query= sqlite3_mprintf("UPDATE USERS SET PORT = '%q' WHERE USER_NAME = '%q'",client_port,user_name);
+			rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+
+			if( rc != SQLITE_OK ){
+				fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        		sqlite3_free(zErrMsg);
+   			}else{
+				   code='0';
+			}
+
+		}
+		pthread_mutex_unlock(&mux_database);
+		enviar(s_local,&code,sizeof(code));
+		close(s_local);
+
+	}else if(strcmp(operation, "DISCONNECT") == 0){//TODO test
+		code='3';
+		char *zErrMsg = 0;
+
+		pthread_mutex_lock(&mux_database);
+
+		if(user_exists(user_name) == 0){
+			code='1';
+		}if(user_connected(user_name) == 0){
+			code='2';
+		}else{
+
 		/* We use this method instead of sprintf() to avoid sqlInjection*/
 		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = NULL WHERE USER_NAME = %q",user_name);
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
 		if( rc != SQLITE_OK ){
-			if(strcmp(zErrMsg,"")){ //TODO Check that the error code is in case it doesn't find it 
-				/*If we are here in means that user is already in database so in cannot connect again*/
-				/*send the response to the client a close this socket*/
-			}else{
-				fprintf(stderr, "SQL error: %s\n", zErrMsg);
-			}
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+			sqlite3_free(zErrMsg);
+		}else{
+			code='0';
+		}
      	
-        sqlite3_free(zErrMsg);
    		}
-	}else{
-
+		pthread_mutex_unlock(&mux_database);
+		enviar(s_local,&code,sizeof(code));
+		close(s_local);   
 	}
+		pthread_mutex_unlock(&mux_database);
 
-
-	close(s_local);
-		
 }
 void print_usage() {
 	    printf("Usage: server -p puerto \n");
@@ -265,6 +484,7 @@ void init_database(){
 	char *zErrMsg = 0;
 	char * init_query="CREATE TABLE USERS("  \
       "USER_NAME TEXT PRIMARY KEY     NOT NULL," \
+	  "IP    TEXT," \
 	  "PORT TEXT);";
 
 	remove("database.db");
@@ -304,6 +524,8 @@ int main(int argc, char *argv[]) {
 	init_server(port);
 	printf("s> init server 127.0.0.1:%s\n", port);
 
+	/*init mutex*/
+	pthread_mutex_init(&mux_database,NULL);
 
 	/*thread structures*/
 	pthread_attr_t t_attr;
@@ -317,12 +539,7 @@ int main(int argc, char *argv[]) {
 		sc = accept(sd, (struct sockaddr *) &client_addr,(socklen_t * restrict) &size);
 		/*When new request comes we create a thread to process it*/
 		pthread_create(&thid, &t_attr, (void *)process_request, &sc);
-
-	
-		/*Create new thread to process the message*/
 	}
-
-	//  INSERT SERVER CODE HERE
 	
 	sqlite3_close(db);
 	return 0;
