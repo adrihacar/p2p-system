@@ -19,7 +19,6 @@ sqlite3 *db; /*database object*/
 pthread_mutex_t mux_database;
 //mutex to protect access to database
 
-//TODO put mutex
 //TODO checkear lo de la ip que sea publica
 //TODO mutex to copy local variable?
 struct sockaddr_in server_addr, client_addr;
@@ -343,6 +342,8 @@ void process_request(int * sc){
 
 		recibir(s_local,user_content, sizeof(user_content));
 
+		pthread_mutex_lock(&mux_database);
+
 		if(user_exists(user_name) == 0){
 			code='1';
 			pthread_mutex_unlock(&mux_database);
@@ -393,6 +394,8 @@ void process_request(int * sc){
 			enviar(s_local,buf,strlen(buf)+1);
 			step = sqlite3_step(res);
 		}
+		pthread_mutex_unlock(&mux_database);
+		close(s_local);
 		}
 
 	}else if(strcmp(operation, "CONNECT") == 0){//TODO test
@@ -461,7 +464,7 @@ void print_usage() {
 
 
 void init_server(char * port_string){
-	char host[]="localhost";
+	char host[]="0.0.0.0";
 	struct hostent *hp;
 	int port = atoi(port_string);
 	sd= socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
