@@ -343,7 +343,9 @@ void process_request(int * sc){
 
 		readLine(s_local,user_content, sizeof(user_content));
 
+
 		pthread_mutex_lock(&mux_database);
+
 
 		if(user_exists(user_name) == 0){
 			code='1';
@@ -403,12 +405,14 @@ void process_request(int * sc){
 		char client_port[8];
 		readLine(s_local,client_port,sizeof(client_port));
 
+
 		struct sockaddr_in addr;
    		socklen_t addr_size = sizeof(struct sockaddr_in);
     	getpeername(s_local, (struct sockaddr *)&addr, &addr_size);
    		char clientip[20];
     	strcpy(clientip, inet_ntoa(addr.sin_addr));
 		puts(clientip);
+
 		code='3';
 
 		char *zErrMsg = 0;
