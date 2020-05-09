@@ -6,6 +6,8 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sqlite3.h> /*libsqlite3-dev*/
@@ -19,9 +21,7 @@ sqlite3 *db; /*database object*/
 pthread_mutex_t mux_database;
 //mutex to protect access to database
 
-//TODO put mutex
-//TODO checkear lo de la ip que sea publica
-//TODO mutex to copy local variable?
+//TODO mutex to copy local variable
 struct sockaddr_in server_addr, client_addr;
 int sd;
 //char buffer[256];
@@ -335,13 +335,17 @@ void process_request(int * sc){
 		close(s_local);
 		}
 
-	}else if(strcmp(operation, "LIST_CONTENT") == 0){//TODO lock mutex
+	}else if(strcmp(operation, "LIST_CONTENT") == 0){
 		char buf[256];
 		char *zErrMsg = 0;
 		char user_content[256];
 
 
 		readLine(s_local,user_content, sizeof(user_content));
+
+
+		pthread_mutex_lock(&mux_database);
+
 
 		if(user_exists(user_name) == 0){
 			code='1';
@@ -393,11 +397,21 @@ void process_request(int * sc){
 			enviar(s_local,buf,strlen(buf)+1);
 			step = sqlite3_step(res);
 		}
+		pthread_mutex_unlock(&mux_database);
+		close(s_local);
 		}
 
-	}else if(strcmp(operation, "CONNECT") == 0){//TODO test
+	}else if(strcmp(operation, "CONNECT") == 0){
 		char client_port[8];
 		readLine(s_local,client_port,sizeof(client_port));
+
+
+		struct sockaddr_in addr;
+   		socklen_t addr_size = sizeof(struct sockaddr_in);
+    	getpeername(s_local, (struct sockaddr *)&addr, &addr_size);
+   		char clientip[20];
+    	strcpy(clientip, inet_ntoa(addr.sin_addr));
+		puts(clientip);
 
 		code='3';
 
@@ -410,7 +424,8 @@ void process_request(int * sc){
 			code='2';
 		}else{
 			/* We use this method instead of sprintf() to avoid sqlInjection*/
-			char *query= sqlite3_mprintf("UPDATE USERS SET PORT = '%q' WHERE USER_NAME = '%q'",client_port,user_name);
+			char *query= sqlite3_mprintf("UPDATE USERS SET PORT = '%q', IP = '%q'  WHERE USER_NAME = '%q'",client_port,clientip,user_name);
+			puts(query);
 			rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
 
 			if( rc != SQLITE_OK ){
@@ -425,7 +440,7 @@ void process_request(int * sc){
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
 
-	}else if(strcmp(operation, "DISCONNECT") == 0){//TODO test
+	}else if(strcmp(operation, "DISCONNECT") == 0){
 		code='3';
 		char *zErrMsg = 0;
 
@@ -438,7 +453,7 @@ void process_request(int * sc){
 		}else{
 
 		/* We use this method instead of sprintf() to avoid sqlInjection*/
-		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = NULL WHERE USER_NAME = %q",user_name);
+		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = NULL WHERE USER_NAME = '%q'",user_name);
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
 		if( rc != SQLITE_OK ){
 			fprintf(stderr, "SQL error: %s\n", zErrMsg);
@@ -461,7 +476,7 @@ void print_usage() {
 
 
 void init_server(char * port_string){
-	char host[]="localhost";
+	char host[]="0.0.0.0";
 	struct hostent *hp;
 	int port = atoi(port_string);
 	sd= socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
