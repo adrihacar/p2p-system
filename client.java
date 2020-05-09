@@ -299,45 +299,34 @@ class client {
 	 */
 	static int publish(String file_name, String description) 
 	{
-		if (file_name.length() > 256){
+		if (file_name.length() > NAME_SIZE){
 			System.out.println("PUBLISH FAIL, FILE NAME TOO LONG");
 			return 0;
 		}
-		if (description.length() > 256){
+		if (description.length() > NAME_SIZE){
 			System.out.println("PUBLISH FAIL, DESCRIPTION NAME TOO LONG");
 			return 0;
 		}
-
+		String op = "PUBLISH";
 		char ans = '4';
-		try {
-			//1. close serverSocket
-			serverAddr.close();
-			//2. destroy thread
-			listeningThread.join();
+		try{
+			Socket sc = new Socket(_server, _port);
+			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
+			
+			write(dataOutputStream, op);
+			write(dataOutputStream, "pablo");
+			write(dataOutputStream, file_name);
+			write(dataOutputStream, description);
+			ans = read(dataInputStream);
 
-			//Connect to server
-			Socket sc = new Socket(_server, _server_port);			
-			//write request
-			OutputStream oStream = sc.getOutputStream();
-			ObjectOutput out = new ObjectOutputStream(oStream);
-			String op = "PUBLISH"+'\0';
-			file_name = file_name + '\0'; //user to disconnect
-
-			out.writeChars(op);
-			out.writeChars(file_name);
-			out.flush();
-
-			//Read ans from server
-			InputStream iStream = sc.getInputStream();
-			ObjectInput in = new ObjectInputStream(iStream);
-			ans = (char)in.read();
-
+			dataOutputStream.close();
+			dataInputStream.close();
 			sc.close();
-
-		} catch (Exception e) {
-			System.err.println("Communication error with the server");
-			e.printStackTrace();
-		}
+		} catch (Exception e){
+            System.err.println("Exeption"+e.toString());
+            e.printStackTrace();
+        }
 		switch(ans){
 			case '0':
 				System.out.println("PUBLISH OK");
@@ -366,35 +355,24 @@ class client {
 	static int delete(String file_name)
 	{
 		char ans = '4';
-		try {
-			//1. close serverSocket
-			serverAddr.close();
-			//2. destroy thread
-			listeningThread.join();
+		String op = "DELETE";
+		try{
+			Socket sc = new Socket(_server, _port);
+			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
+			
+			write(dataOutputStream, op);
+			write(dataOutputStream, file_name);
 
-			//Connect to server
-			Socket sc = new Socket(_server, _server_port);			
-			//write request
-			OutputStream oStream = sc.getOutputStream();
-			ObjectOutput out = new ObjectOutputStream(oStream);
-			String op = "DELETE"+'\0';
-			file_name = file_name + '\0'; //user to disconnect
+			ans = read(dataInputStream);
 
-			out.writeChars(op);
-			out.writeChars(file_name);
-			out.flush();
-
-			//Read ans from server
-			InputStream iStream = sc.getInputStream();
-			ObjectInput in = new ObjectInputStream(iStream);
-			ans = (char)in.read();
-
+			dataOutputStream.close();
+			dataInputStream.close();
 			sc.close();
-
-		} catch (Exception e) {
-			System.err.println("Communication error with the server");
-			e.printStackTrace();
-		}
+		} catch (Exception e){
+            System.err.println("Exeption"+e.toString());
+            e.printStackTrace();
+        }
 		switch(ans){
 			case '0':
 				System.out.println("DELETE OK");
