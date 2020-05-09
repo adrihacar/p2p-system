@@ -99,8 +99,8 @@ void process_request(int * sc){
 	char user_name[256];
 	char operation[256];
 
-	recibir(s_local,operation,sizeof(operation));
-	recibir(s_local,user_name,sizeof(user_name));
+	readLine(s_local,operation,sizeof(operation));
+	readLine(s_local,user_name,sizeof(user_name));
 
 	puts("All data read, inserting in database");
 	if(strcmp(operation, "REGISTER") == 0){
@@ -199,8 +199,8 @@ void process_request(int * sc){
 		char file_name[256];
 		char file_description[256];
 
-		recibir(s_local,file_name,sizeof(file_name));
-		recibir(s_local,file_description,sizeof(file_description));
+		readLine(s_local,file_name,sizeof(file_name));
+		readLine(s_local,file_description,sizeof(file_description));
 
 		char *zErrMsg = 0;
 
@@ -233,7 +233,7 @@ void process_request(int * sc){
 		code ='4';
 		char file_name[256];
 
-		recibir(s_local,file_name,sizeof(file_name));
+		readLine(s_local,file_name,sizeof(file_name));
 
 		char *zErrMsg = 0;
 
@@ -341,7 +341,7 @@ void process_request(int * sc){
 		char user_content[256];
 
 
-		recibir(s_local,user_content, sizeof(user_content));
+		readLine(s_local,user_content, sizeof(user_content));
 
 		if(user_exists(user_name) == 0){
 			code='1';
@@ -397,7 +397,7 @@ void process_request(int * sc){
 
 	}else if(strcmp(operation, "CONNECT") == 0){//TODO test
 		char client_port[8];
-		recibir(s_local,client_port,sizeof(client_port));
+		readLine(s_local,client_port,sizeof(client_port));
 
 		code='3';
 
