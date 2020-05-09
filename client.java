@@ -4,13 +4,11 @@ import java.lang.*;
 import java.net.*;
 import java.util.*;
 
-
 class client {
-	
-	
+
 	/******************* ATTRIBUTES *******************/
-	
-	private static String _server   = null; //server IP
+
+	private static String _server = null; // server IP
 	private static int _port = -1;
 	private static int _server_port = 3333;
 	private static ServerSocket serverAddr = null;
@@ -19,45 +17,101 @@ class client {
 	private static String _downloads_path = ".//files//downloaded_files";
 	private static final int BUFFER_SIZE = 4096;
 	private static final int NAME_SIZE = 256;
-	//Thread in charge of sending requested files
+	// Thread in charge of sending requested files
 	private static Thread listeningThread;
 
-		
-	
 	/********************* METHODS ********************/
-	
+
 	/**
 	 * @param user - User name to register in the system
 	 * 
 	 * @return ERROR CODE
 	 */
-	static int register(String user) 
-	{
-		char ans = '1';
-		try{
-            Socket sc = new Socket(_server, _port);
-            OutputStream ostream = sc.getOutputStream();
-			ObjectOutput s = new ObjectOutputStream(ostream);
 
-			InputStream istream = sc.getInputStream();
-			ObjectInput in = new ObjectInputStream(istream);
+	/* For opening connection
+	*
+	Socket sc = new Socket(_server, _port);
+	DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+	DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
+	*
+	*/
+
+	/* For closing connection
+	*
+	dataOutputStream.close();
+	dataInputStream.close();
+	sc.close();
+	*
+	*/
+
+	static void write(DataOutputStream dataOutputStream, String message) {
+		try {
+			// write the message we want to send
+			//for (int i = 0; i < message.length();i++){
+			//	dataOutputStream.write(message.charAt(i));
+			//	dataOutputStream.flush(); // send char
+			//}
+			//dataOutputStream.write('\0');
+			//char [] m = message;
+			dataOutputStream.write(message.getBytes("ASCII"));
+			dataOutputStream.writeByte('\n');
+			dataOutputStream.flush(); // send null character
+		} catch (Exception e) {
+			System.err.println("Exeption" + e.toString());
+			e.printStackTrace();
+		}
+	}
+
+	static char read(DataInputStream dataInputStream){
+		char c = '5';
+		try {
+			while (0 == dataInputStream.available()){
+				
+			}
+			c = (char)dataInputStream.readByte();
+		} catch (Exception e) {
+			System.err.println("Exeption" + e.toString());
+			e.printStackTrace();
+		}
+		return c;
+	}
+
+
+
+	static int register(String user) {
+		char ans = '2';
+		try {
+			Socket sc = new Socket(_server, _port);
+			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 			
-			String op = "REGISTER"+'\0';
-			user = user + '\0';
+			write(dataOutputStream, "REGISTER");
+			write(dataOutputStream, user);
+			ans = read(dataInputStream);
 
-			//Send request
-			s.writeChars(op);			
-			s.writeChars(user);
-			s.flush();
-
-			//Read answer from server
-            ans = (char)in.read();
-			ans = 0;
+			dataOutputStream.close();
+			dataInputStream.close();
 			sc.close();
-        } catch (Exception e){
-            System.err.println("Exeption"+e.toString());
-            e.printStackTrace();
-        }
+		} catch (IOException e1) {
+			System.err.println("Exeption" + e1.toString());
+			e1.printStackTrace();
+		}
+
+		/*
+		 * try{ Socket sc = new Socket(_server, _port); OutputStream ostream =
+		 * sc.getOutputStream(); ObjectOutput s = new ObjectOutputStream(ostream);
+		 * InputStream istream = sc.getInputStream(); ObjectInput in = new
+		 * ObjectInputStream(istream);
+		 * 
+		 * String op = "REGISTER"+'\0'; user = user + '\0'; ostream.write("sdfas");
+		 * //Send request s.writeChars(op); s.writeChars(user);
+		 * 
+		 * //Read answer from server ans = (char)in.read(); ans = 0; sc.close(); } catch
+		 * (Exception e){ System.err.println("Exeption"+e.toString());
+		 * e.printStackTrace(); }
+		 */
+
+
         switch(ans){
             case '0':
                 System.out.println("REGISTER OK");
@@ -79,7 +133,7 @@ class client {
 	 */
 	static int unregister(String user) 
 	{
-		char ans = '1';
+		char ans = '2';
 		try{
             Socket sc = new Socket(_server, _port);
             OutputStream ostream = sc.getOutputStream();
@@ -177,7 +231,7 @@ class client {
 		
 		String op = "CONNECT"+'\0';
 		user = user + '\0';
-		char ans = '1';
+		char ans = '3';
 		try {
 			//Establish connection with the server
 			Socket server_sc = new Socket(_server, _server_port);
@@ -224,7 +278,7 @@ class client {
 	 */
 	static int disconnect(String user) 
 	{
-		char ans = '1';
+		char ans = '3';
 		try {
 			//1. close serverSocket
 			serverAddr.close();
@@ -288,7 +342,7 @@ class client {
 			return 0;
 		}
 
-		char ans = '1';
+		char ans = '4';
 		try {
 			//1. close serverSocket
 			serverAddr.close();
@@ -345,7 +399,7 @@ class client {
 	 */
 	static int delete(String file_name)
 	{
-		char ans = '1';
+		char ans = '4';
 		try {
 			//1. close serverSocket
 			serverAddr.close();
@@ -388,7 +442,7 @@ class client {
 			case '3':
 				System.out.println("DELETE FAIL, CONTENT NOT PUBLISHED");				
 				break;
-			case '4':
+			default:
 				System.out.println("DELETE FAIL");				
 				break;
 		}		
@@ -400,7 +454,7 @@ class client {
 	 */
 	static int list_users()
 	{
-		char ans = '1';
+		char ans = '3';
 		try{			 
 			//Connecto to the server
 			Socket sc = new Socket(_server, _server_port);
@@ -460,7 +514,7 @@ class client {
 	 */
 	static int list_content(String user_name)
 	{
-		char ans = '1';
+		char ans = '4';
 		try{			 
 			//Connecto to the server
 			Socket sc = new Socket(_server, _server_port);
@@ -530,7 +584,7 @@ class client {
 	static int get_file(String user_name, String remote_file_name, String local_file_name)
 	{
 		
-		char ans = '1';
+		char ans = '2';
 		try{
 				
 			Socket sc_server = new Socket(_server, _server_port);
