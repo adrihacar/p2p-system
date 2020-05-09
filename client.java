@@ -46,13 +46,6 @@ class client {
 
 	static void write(DataOutputStream dataOutputStream, String message) {
 		try {
-			// write the message we want to send
-			//for (int i = 0; i < message.length();i++){
-			//	dataOutputStream.write(message.charAt(i));
-			//	dataOutputStream.flush(); // send char
-			//}
-			//dataOutputStream.write('\0');
-			//char [] m = message;
 			dataOutputStream.write(message.getBytes("ASCII"));
 			dataOutputStream.writeByte('\n');
 			dataOutputStream.flush(); // send null character
@@ -80,38 +73,23 @@ class client {
 
 	static int register(String user) {
 		char ans = '2';
-		try {
+		String op = "REGISTER";
+		try{
 			Socket sc = new Socket(_server, _port);
 			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
 			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 			
-			write(dataOutputStream, "REGISTER");
+			write(dataOutputStream, op);
 			write(dataOutputStream, user);
 			ans = read(dataInputStream);
 
 			dataOutputStream.close();
 			dataInputStream.close();
 			sc.close();
-		} catch (IOException e1) {
-			System.err.println("Exeption" + e1.toString());
-			e1.printStackTrace();
-		}
-
-		/*
-		 * try{ Socket sc = new Socket(_server, _port); OutputStream ostream =
-		 * sc.getOutputStream(); ObjectOutput s = new ObjectOutputStream(ostream);
-		 * InputStream istream = sc.getInputStream(); ObjectInput in = new
-		 * ObjectInputStream(istream);
-		 * 
-		 * String op = "REGISTER"+'\0'; user = user + '\0'; ostream.write("sdfas");
-		 * //Send request s.writeChars(op); s.writeChars(user);
-		 * 
-		 * //Read answer from server ans = (char)in.read(); ans = 0; sc.close(); } catch
-		 * (Exception e){ System.err.println("Exeption"+e.toString());
-		 * e.printStackTrace(); }
-		 */
-
-
+		} catch (Exception e){
+            System.err.println("Exeption"+e.toString());
+            e.printStackTrace();
+        }
         switch(ans){
             case '0':
                 System.out.println("REGISTER OK");
@@ -134,24 +112,20 @@ class client {
 	static int unregister(String user) 
 	{
 		char ans = '2';
+		String op = "UNREGISTER";
 		try{
-            Socket sc = new Socket(_server, _port);
-            OutputStream ostream = sc.getOutputStream();
-			ObjectOutput s = new ObjectOutputStream(ostream);
+			Socket sc = new Socket(_server, _port);
+			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 			
-			DataInputStream iStream = new DataInputStream(sc.getInputStream());
-			//create request
-			String op = "UNREGISTER"+'\0';
-			user = user + '\0';
-			//send request			
-			s.writeChars(op);			
-			s.writeChars(user);
-			s.flush();
-			
-			//Read answer
-            ans = (char)iStream.read();
+			write(dataOutputStream, op);
+			write(dataOutputStream, user);
+			ans = read(dataInputStream);
+
+			dataOutputStream.close();
+			dataInputStream.close();
 			sc.close();
-        } catch (Exception e){
+		} catch (Exception e){
             System.err.println("Exeption"+e.toString());
             e.printStackTrace();
         }
@@ -229,28 +203,25 @@ class client {
 		};
 		//4. Send request to server
 		
-		String op = "CONNECT"+'\0';
-		user = user + '\0';
+		String op = "CONNECT";
 		char ans = '3';
-		try {
-			//Establish connection with the server
-			Socket server_sc = new Socket(_server, _server_port);
-			DataOutputStream server_oStream = new DataOutputStream(server_sc.getOutputStream());
-
-			DataInputStream server_iStream = new DataInputStream(server_sc.getInputStream());
-			//Send req
-			server_oStream.writeChars(op);
-			server_oStream.writeChars(user);
-			server_oStream.flush();		
-
-			//5. Read answer from server
-			ans = (char)server_iStream.read();
-
-			server_sc.close();
+		try{
+			Socket sc = new Socket(_server, _port);
+			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 			
-			} catch (Exception e) {
-			
-		}
+			write(dataOutputStream, op);
+			write(dataOutputStream, user);
+			write(dataOutputStream, ""+_listening_port);
+			ans = read(dataInputStream);
+
+			dataOutputStream.close();
+			dataInputStream.close();
+			sc.close();
+		} catch (Exception e){
+            System.err.println("Exeption"+e.toString());
+            e.printStackTrace();
+        }
 				
 		switch(ans){
 			case '0':
@@ -279,30 +250,25 @@ class client {
 	static int disconnect(String user) 
 	{
 		char ans = '3';
+		String op = "DISCONNECT";
 		try {
 			//1. close serverSocket
 			serverAddr.close();
 			//2. destroy thread
 			listeningThread.join();
 
-			//Connect to server
-			Socket sc = new Socket(_server, _server_port);			
-			//write request
-			OutputStream oStream = sc.getOutputStream();
-			ObjectOutput out = new ObjectOutputStream(oStream);
-			String op = "DISCONNECT"+'\0';
-			user = user + '\0'; //user to disconnect
+			Socket sc = new Socket(_server, _port);
+			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
+			
+			write(dataOutputStream, op);
+			write(dataOutputStream, user);
+			ans = read(dataInputStream);
 
-			out.writeChars(op);
-			out.writeChars(user);
-			out.flush();
-
-			//Read ans from server
-			InputStream iStream = sc.getInputStream();
-			ObjectInput in = new ObjectInputStream(iStream);
-			ans = (char)in.read();
-
+			dataOutputStream.close();
+			dataInputStream.close();
 			sc.close();
+			
 
 		} catch (Exception e) {
 			System.err.println("Communication error with the server");
