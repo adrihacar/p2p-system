@@ -315,7 +315,6 @@ class client {
 			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 			
 			write(dataOutputStream, op);
-			write(dataOutputStream, "pablo");
 			write(dataOutputStream, file_name);
 			write(dataOutputStream, description);
 			ans = read(dataInputStream);
