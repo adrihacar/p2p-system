@@ -47,7 +47,7 @@ class client {
 	static void write(DataOutputStream dataOutputStream, String message) {
 		try {
 			dataOutputStream.write(message.getBytes("ASCII"));
-			dataOutputStream.writeByte('\n');
+			dataOutputStream.writeByte('\0');
 			dataOutputStream.flush(); // send null character
 		} catch (Exception e) {
 			System.err.println("Exeption" + e.toString());
@@ -222,8 +222,7 @@ class client {
 		} catch (Exception e){
             System.err.println("Exeption"+e.toString());
             e.printStackTrace();
-        }
-				
+        }		
 		switch(ans){
 			case '0':
 				System.out.println("CONNECT OK");
@@ -415,7 +414,7 @@ class client {
 			Socket sc = new Socket(_server, _server_port);
 
 			//Create request message
-			String op = "LIST_USERS" + '\0';
+			String op = "LIST_USERS";
 
 			OutputStream oStream = sc.getOutputStream();
 			DataOutputStream out = new DataOutputStream(oStream);

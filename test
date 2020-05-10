@@ -1,0 +1,5 @@
+#!/bin/sh
+
+rm *.class
+javac client.java
+echo -n "REGISTER usuario\nCONNECT usuario\nPUBLISH archivo descripcion\nDELETE archivo\nDISCONNECT usuario\nUNREGISTER usuario" | java -cp . client -s localhost -p 1234
