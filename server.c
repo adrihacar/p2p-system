@@ -420,7 +420,7 @@ void process_request(int * sc){
 
 		if(user_exists(user_name) == 0){
 			code='1';
-		}if(user_connected(user_name) == 1){
+		}else if(user_connected(user_name) == 1){
 			code='2';
 		}else{
 			/* We use this method instead of sprintf() to avoid sqlInjection*/
@@ -448,7 +448,7 @@ void process_request(int * sc){
 
 		if(user_exists(user_name) == 0){
 			code='1';
-		}if(user_connected(user_name) == 0){
+		}else if(user_connected(user_name) == 0){
 			code='2';
 		}else{
 
