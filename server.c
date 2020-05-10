@@ -213,7 +213,7 @@ void process_request(int * sc){
 		}else if(file_exists(file_name,user_name) == 1){
 			code='3';
 		}else{
-			char *query= sqlite3_mprintf("INSERT INTO %q(FILE_NAME, FILE_DESCRIPTION) VALUES(%q, %q);",user_name, file_name, file_description);
+			char *query= sqlite3_mprintf("INSERT INTO %q(FILE_NAME, FILE_DESCRIPTION) VALUES('%q', '%q');",user_name, file_name, file_description);
 
 			rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
 
@@ -250,7 +250,7 @@ void process_request(int * sc){
 		}else{
 
 
-		char *query= sqlite3_mprintf("DELETE FROM %q WHERE FILE_NAME=%q;",user_name, file_name);
+		char *query= sqlite3_mprintf("DELETE FROM %q WHERE FILE_NAME='%q';",user_name, file_name);
 		
 		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
 		if( rc != SQLITE_OK ){

@@ -7,7 +7,7 @@ import java.util.*;
 class client {
 
 	/******************* ATTRIBUTES *******************/
-
+	private static String _user = null;
 	private static String _server = null; // server IP
 	private static int _port = -1;
 	private static int _server_port = 3333;
@@ -218,6 +218,7 @@ class client {
 			dataOutputStream.close();
 			dataInputStream.close();
 			sc.close();
+			_user = user;
 		} catch (Exception e){
             System.err.println("Exeption"+e.toString());
             e.printStackTrace();
@@ -268,6 +269,7 @@ class client {
 			dataOutputStream.close();
 			dataInputStream.close();
 			sc.close();
+			_user = null;
 			
 
 		} catch (Exception e) {
@@ -307,6 +309,10 @@ class client {
 			System.out.println("PUBLISH FAIL, DESCRIPTION NAME TOO LONG");
 			return 0;
 		}
+		if (_user == null){
+			System.out.println("PUBLISH FAIL, USER NOT CONNECTED");
+			return 0;
+		}
 		String op = "PUBLISH";
 		char ans = '4';
 		try{
@@ -315,6 +321,7 @@ class client {
 			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 			
 			write(dataOutputStream, op);
+			write(dataOutputStream, _user);
 			write(dataOutputStream, file_name);
 			write(dataOutputStream, description);
 			ans = read(dataInputStream);
@@ -355,12 +362,17 @@ class client {
 	{
 		char ans = '4';
 		String op = "DELETE";
+		if (_user == null){
+			System.out.println("DELETE FAIL, USER NOT CONNECTED");
+			return 0;
+		}
 		try{
 			Socket sc = new Socket(_server, _port);
 			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
 			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 			
 			write(dataOutputStream, op);
+			write(dataOutputStream, _user);
 			write(dataOutputStream, file_name);
 
 			ans = read(dataInputStream);
