@@ -6,7 +6,7 @@ CC = gcc
 CCGLAGS =	-Wall  -g
 
 LDFLAGS = -L$(INSTALL_PATH)/lib/
-LDLIBS = -lpthread
+LDLIBS = -lpthread -lsqlite3
 
 
 all: CFLAGS=$(CCGLAGS)
