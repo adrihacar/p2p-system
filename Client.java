@@ -96,18 +96,24 @@ class Client implements Runnable {
 	}
 
 	/*Function run by the p2p client side. Is in charge of accpting connections with other clients and sending files*/
-	public void run(){								
+	public void run(){
+									
 		while(true){ //while(connected)
 			try {
-				System.out.println("DEBUG: P2P listening");
+				//P2P listening
 				//Accept connection from other user
 				Socket sc = clientP2P.accept();
-				System.out.println("DEBUG: P2P connection accepted");
+	
 				DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 				DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
 				//Read request
 				String opRequest = readString(dataInputStream);
 				
+				if(opRequest.equals("DISCONNECT")){
+					clientP2P.close();
+					//Ending thread
+					return;
+				}
 				/*If the operation is not GET_FILE errno 2 is returned to the 
 					other client adn the connection is closed
 				*/
@@ -118,8 +124,6 @@ class Client implements Runnable {
 					sc.close();
 				
 				}else {
-					System.out.println("DEBUG: P2P searching the requested file");
-
 					//Read the name of the file requested
 					String req_file = readString(dataInputStream);
 					
@@ -138,11 +142,6 @@ class Client implements Runnable {
 						sc.close();
 					} else {//If the file exist it is sent
 						write(dataOutputStream, "0");
-						//DEBUG
-						File sendingFile = new File(_file_path);
-						System.out.println("DEBUG: P2P preparing to send the file " + _file_path);
-						System.out.println("DEBUG: P2P file size " + sendingFile.length());
-						//DEBUG
 
 						byte [] buffer = new byte[MAX_FILE_SIZE];
 					
@@ -162,12 +161,6 @@ class Client implements Runnable {
 						}	
 						//Send the file size so that the other client can allocate space
 						dataOutputStream.writeInt(total);
-						System.out.println("DEBUG: P2P sending file (size = " + total + ")");
-
-						//DEBUG
-						String text = new String(buffer, "UTF-8");
-						System.out.println(text);
-						//DEBUG
 
 						//Send the bytes to the requesting client
 						dataOutputStream.write(buffer, 0, total);
@@ -336,13 +329,19 @@ class Client implements Runnable {
 		char ans = '3';
 		String op = "DISCONNECT";
 		try {
-			//1. close serverSocket
-			clientP2P.close();
+
+			//1. Send the DISCONNECT op to the serverSocket
+			Socket sc = new Socket(_server, _listening_port);
+			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+			write(dataOutputStream, op);
+			sc.close();
+			
 			//2. destroy thread
 			p2p_client_thread.join();
-
-			Socket sc = new Socket(_server, _port);
-			DataOutputStream dataOutputStream = new DataOutputStream(sc.getOutputStream());
+			
+			//Connect to the server
+			sc = new Socket(_server, _port);
+			dataOutputStream = new DataOutputStream(sc.getOutputStream());
 			DataInputStream dataInputStream = new DataInputStream(sc.getInputStream());
 			
 			write(dataOutputStream, op);
@@ -500,7 +499,10 @@ class Client implements Runnable {
 	static int list_users()
 	{
 		char ans = '3';
-
+		if (_user == null){
+			System.out.println("LIST_USER FAIL, USER NOT CONNECTED");
+			return 0;
+		}
 		//Create request message
 		String op = "LIST_USERS";
 		try{			 
@@ -582,6 +584,12 @@ class Client implements Runnable {
 	static int list_content(String user_name)
 	{
 		char ans = '4';
+
+		if (_user == null){
+			System.out.println("LIST_CONTENT FAIL, USER NOT CONNECTED");
+			return 0;
+		}
+
 		try{			 
 			//Connecto to the server
 			Socket sc = new Socket(_server, _port);
@@ -652,6 +660,12 @@ class Client implements Runnable {
 	{
 		
 		char ans = '2';
+
+		if (_user == null){
+			System.out.println("GET_FILE FAIL, USER NOT CONNECTED");
+			return 0;
+		}
+
 		try{
 			User remoteUser = User.findUserByName(userList, user_name);
 			//If the user could not be found means that the user is not connected, thus it cannot send the file
@@ -673,10 +687,10 @@ class Client implements Runnable {
 			ans = read(dataInputStream);
 
 			if(ans == '0'){ //The file is going to be transmited
-				System.out.println("The file is being downloaded");
+				//System.out.println("The file is being downloaded");
 				File download = new File(_downloads_path + local_file_name);
-				System.out.println("DEBUG: can write = " + download.canWrite());
 
+				/*
 				if(!download.canWrite()){
 					if(!download.setWritable(true)){
 						System.out.println("Error writing the file");
@@ -691,16 +705,13 @@ class Client implements Runnable {
 					if(!download.setExecutable(true)){
 						System.out.println("Error executing the file");
 					}
-				}
+				}*/
+
 				//CreateNewFile returns false if the file already exists, true if it has been created
 				if (!download.createNewFile()){
-					System.out.println("DEBUG: Error file already exists");
+					//Error file already exists
 					ans = 2;
 				} else {
-					//DEBUG
-					System.out.println("DEBUG: File created in downloads");
-					//DEBUG
-
 					//Locate the local file to output the contents
 					FileOutputStream fileOut = new FileOutputStream(_downloads_path + local_file_name);
 					int fileSize = dataInputStream.readInt();
@@ -709,8 +720,8 @@ class Client implements Runnable {
 					dataInputStream.read(fileBytes, 0, fileSize);
 
 					//DEBUG
-					String text = new String(fileBytes, "UTF-8");
-					System.out.println(text + "\t" +text.length());
+					//String text = new String(fileBytes, "UTF-8");
+					//System.out.println(text + "\t" +text.length());
 					//DEBUG
 
 					//Write the contents into the file 
@@ -727,7 +738,6 @@ class Client implements Runnable {
 					System.out.println("GET_FILE FAIL / FILE NOT EXIST");
 					break;				
 				default:
-					System.out.println("DEBUG: errno = " + ans);
 					System.out.println("GET_FILE FAIL");
 					break;
 			}
