@@ -1,7 +1,6 @@
 
 import java.io.*;
 import gnu.getopt.Getopt;
-import java.lang.*;
 import java.net.*;
 import java.util.*;
 
@@ -12,12 +11,11 @@ class Client implements Runnable {
 	private static String _user = null;
 	private static String _server = null; // server IP
 	private static int _port = -1;
-	private static int _server_port = 3333;
 	private static ServerSocket clientP2P = null;
 	//Port where the client will listen for files requests
 	private static int _listening_port = 0;
-	private static String _upload_path = ".//files//Shared//";
-	private static String _downloads_path = ".//files//Downloads//";
+	private static String _upload_path = ".//files/Shared//";
+	private static String _downloads_path = ".//files/Downloads//";
 	private static final int MAX_FILE_SIZE = 1048576; //1MB
 	private static final int NAME_SIZE = 256;
 	// Thread in charge of sending requested files
@@ -133,45 +131,46 @@ class Client implements Runnable {
 					//Prepare message to write the file
 					
 					//Reading the file to send
-					FileInputStream fileInput = new FileInputStream(_file_path);
-					//If The file do not exist, return errno 1 to client and close connection
-					if (fileInput == null){
+					FileInputStream fileInput =null;
+					try {
+						fileInput = new FileInputStream(_file_path);
+					} catch (FileNotFoundException e) {
 						write(dataOutputStream, "1");
 						dataInputStream.close();
 						dataOutputStream.close();
 						sc.close();
-					} else {//If the file exist it is sent
+					}
 						write(dataOutputStream, "0");
 
 						byte [] buffer = new byte[MAX_FILE_SIZE];
 					
-						int b_read = 0;
-						int total = 0;
-						while((b_read = fileInput.read(buffer))!= -1){
-							//send file
-							total += b_read;
-							if(total > MAX_FILE_SIZE){
-								System.out.println("ERROR: the file is too big");
-								fileInput.close();
-								dataInputStream.close();
-								dataOutputStream.close();
-								sc.close();
-								throw new Exception("ExcedeedMaxFileSize");
-							}
-						}	
-						//Send the file size so that the other client can allocate space
-						dataOutputStream.writeInt(total);
+					int b_read = 0;
+					int total = 0;
+					while((b_read = fileInput.read(buffer))!= -1){
+						//send file
+						total += b_read;
+						if(total > MAX_FILE_SIZE){
+							System.out.println("ERROR: the file is too big");
+							fileInput.close();
+							dataInputStream.close();
+							dataOutputStream.close();
+							sc.close();
+							throw new Exception("ExcedeedMaxFileSize");
+						}
+					}	
+					//Send the file size so that the other client can allocate space
+					dataOutputStream.writeInt(total);
 
-						//Send the bytes to the requesting client
-						dataOutputStream.write(buffer, 0, total);
-						dataOutputStream.flush();
+					//Send the bytes to the requesting client
+					dataOutputStream.write(buffer, 0, total);
+					dataOutputStream.flush();
 
-						//Close file and end connection
-						fileInput.close();
-						dataInputStream.close();
-						dataOutputStream.close();
-						sc.close();
-					}
+					//Close file and end connection
+					fileInput.close();
+					dataInputStream.close();
+					dataOutputStream.close();
+					sc.close();
+					
 					
 				}
 				
@@ -665,18 +664,30 @@ class Client implements Runnable {
 			System.out.println("GET_FILE FAIL, USER NOT CONNECTED");
 			return 0;
 		}
+		if (user_name.equals(_user)){
+			System.out.println("GET_FILE FAIL");
+			return 0;
+		}
 
 		try{
+			if (userList == null){
+				System.out.println();
+			}
 			User remoteUser = User.findUserByName(userList, user_name);
 			//If the user could not be found means that the user is not connected, thus it cannot send the file
 			if(remoteUser == null){
 				System.out.println("GET_FILE FAIL: USER DOES NOT EXIST OR NOT CONNECTED. UPDATE STATUS CALLING LIST_USERS");
-				return -1;
+				return 0;
 			}
 
 			String op = "GET_FILE";
-
-			Socket sc_p2p = new Socket(remoteUser.get_ip(), remoteUser.get_port());
+			Socket sc_p2p = null;
+			try {
+				sc_p2p = new Socket(remoteUser.get_ip(), remoteUser.get_port());
+			} catch (Exception e) {
+				System.out.println("GET_FILE FAIL");
+				return 0;
+			}
 			DataOutputStream dataOutputStream = new DataOutputStream(sc_p2p.getOutputStream());
 			DataInputStream dataInputStream = new DataInputStream(sc_p2p.getInputStream());
 			
@@ -690,23 +701,6 @@ class Client implements Runnable {
 				//System.out.println("The file is being downloaded");
 				File download = new File(_downloads_path + local_file_name);
 
-				/*
-				if(!download.canWrite()){
-					if(!download.setWritable(true)){
-						System.out.println("Error writing the file");
-					}
-				}
-				if(!download.canRead()){
-					if(!download.setReadable(true)){
-						System.out.println("Error reading the file");
-					}
-				}
-				if(!download.canExecute()){
-					if(!download.setExecutable(true)){
-						System.out.println("Error executing the file");
-					}
-				}*/
-
 				//CreateNewFile returns false if the file already exists, true if it has been created
 				if (!download.createNewFile()){
 					//Error file already exists
@@ -716,16 +710,12 @@ class Client implements Runnable {
 					FileOutputStream fileOut = new FileOutputStream(_downloads_path + local_file_name);
 					int fileSize = dataInputStream.readInt();
 					byte[] fileBytes = new byte[fileSize];
-					//Read the content from the connection socket
-					dataInputStream.read(fileBytes, 0, fileSize);
+					int readed = dataInputStream.read(fileBytes, 0, fileSize);
+                    while (readed != 0 && readed != -1){
+                        fileOut.write(fileBytes, 0, readed);
+                        readed = dataInputStream.read(fileBytes, 0, fileSize);
 
-					//DEBUG
-					//String text = new String(fileBytes, "UTF-8");
-					//System.out.println(text + "\t" +text.length());
-					//DEBUG
-
-					//Write the contents into the file 
-					fileOut.write(fileBytes, 0, fileSize);
+                    }
 					fileOut.close();
 				}
 			}
