@@ -1,4 +1,4 @@
-BIN_FILES  = server
+BIN_FILES  = server Client.class User.class UpperPublisher.class UpperService.class
 
 CC = gcc
 
@@ -19,8 +19,11 @@ server: server.o lines.o
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
 
+Client.class User.class UpperPublisher.class UpperService.class: Client.java User.java UpperPublisher.java UpperService.java
+	javac *.java
+
 clean:
-	rm -f $(BIN_FILES) *.o
+	rm -f $(BIN_FILES) *.o *.db
 
 .SUFFIXES:
 .PHONY : clean

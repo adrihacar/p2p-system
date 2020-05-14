@@ -1,0 +1,3 @@
+#!/bin/sh
+
+echo -n "REGISTER usuario\nCONNECT usuario\nPUBLISH small.txt descripcion\n" | java -cp . Client -s localhost -p 1234
