@@ -91,7 +91,7 @@ int count_rows(void *count, int argc, char **argv, char **azColName){
 	return 0;
 }
 
-char regist(char * user_name){
+char my_register(char * user_name){
 	int rc;
 	char code = '2';
 	char *zErrMsg = 0;
@@ -201,6 +201,53 @@ char delete(char * user_name, char * file_name){
 	return code;
 }
 
+char my_connect (char * user_name, char * clientip, char * client_port){
+	int rc;
+	char code = '3';
+	char *zErrMsg = 0;
+	if(user_exists(user_name) == 0){
+		code = '1';
+	}else if(user_connected(user_name) == 1){
+		code = '2';
+	}else{
+		/* We use this method instead of sprintf() to avoid sqlInjection*/
+		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = '%q', IP = '%q'  WHERE USER_NAME = '%q'",client_port,clientip,user_name);
+		puts(query);
+		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+		if( rc != SQLITE_OK ){
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    		sqlite3_free(zErrMsg);
+			code = '3';
+		}else{
+			code = '0';
+		}
+	}
+	return code;
+}
+
+char disconnect (char * user_name){
+	int rc;
+	char code = '3';
+	char *zErrMsg = 0;
+	if(user_exists(user_name) == 0){
+		code = '1';
+	}else if(user_connected(user_name) == 0){
+		code = '2';
+	}else{
+		/* We use this method instead of sprintf() to avoid sqlInjection*/
+		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = NULL WHERE USER_NAME = '%q'",user_name);
+		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+		if( rc != SQLITE_OK ){
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+			sqlite3_free(zErrMsg);
+			code = '3';
+		}else{
+			code='0';
+		}	
+   	}
+	return code;
+}
+
 /* executed by each thread to process the request*/
 void process_request(int * sc){
 	int rc;	/*used to check return codes from database*/
@@ -216,7 +263,7 @@ void process_request(int * sc){
 	puts("All data read, inserting in database");
 	if(strcmp(operation, "REGISTER") == 0){
 		pthread_mutex_lock(&mux_database);
-		code = regist(user_name);
+		code = my_register(user_name);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
@@ -238,7 +285,6 @@ void process_request(int * sc){
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
 	}else if(strcmp(operation, "DELETE") == 0){
-		code ='4';
 		char file_name[256];
 		readLine(s_local,file_name,sizeof(file_name));
 		pthread_mutex_lock(&mux_database);
@@ -385,70 +431,25 @@ void process_request(int * sc){
 	}else if(strcmp(operation, "CONNECT") == 0){
 		char client_port[8];
 		readLine(s_local,client_port,sizeof(client_port));
-
-
 		struct sockaddr_in addr;
    		socklen_t addr_size = sizeof(struct sockaddr_in);
     	getpeername(s_local, (struct sockaddr *)&addr, &addr_size);
    		char clientip[20];
     	strcpy(clientip, inet_ntoa(addr.sin_addr));
 		puts(clientip);
-
-		code='3';
-
-		char *zErrMsg = 0;
 		pthread_mutex_lock(&mux_database);
-
-		if(user_exists(user_name) == 0){
-			code='1';
-		}else if(user_connected(user_name) == 1){
-			code='2';
-		}else{
-			/* We use this method instead of sprintf() to avoid sqlInjection*/
-			char *query= sqlite3_mprintf("UPDATE USERS SET PORT = '%q', IP = '%q'  WHERE USER_NAME = '%q'",client_port,clientip,user_name);
-			puts(query);
-			rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-
-			if( rc != SQLITE_OK ){
-				fprintf(stderr, "SQL error: %s\n", zErrMsg);
-        		sqlite3_free(zErrMsg);
-   			}else{
-				   code='0';
-			}
-
-		}
+		code = my_connect(user_name,clientip,client_port);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
-
 	}else if(strcmp(operation, "DISCONNECT") == 0){
-		code='3';
-		char *zErrMsg = 0;
-
 		pthread_mutex_lock(&mux_database);
-
-		if(user_exists(user_name) == 0){
-			code='1';
-		}else if(user_connected(user_name) == 0){
-			code='2';
-		}else{
-
-		/* We use this method instead of sprintf() to avoid sqlInjection*/
-		char *query= sqlite3_mprintf("UPDATE USERS SET PORT = NULL WHERE USER_NAME = '%q'",user_name);
-		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-		if( rc != SQLITE_OK ){
-			fprintf(stderr, "SQL error: %s\n", zErrMsg);
-			sqlite3_free(zErrMsg);
-		}else{
-			code='0';
-		}
-     	
-   		}
+		code = disconnect(user_name);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);   
 	}
-		pthread_mutex_unlock(&mux_database);
+	pthread_mutex_unlock(&mux_database);
 
 }
 void print_usage() {
