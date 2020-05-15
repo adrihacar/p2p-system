@@ -4,6 +4,8 @@ import gnu.getopt.Getopt;
 import java.net.*;
 import java.util.*;
 
+import client.UpperServiceService;
+import client.UpperService;
 
 class Client implements Runnable {
 
@@ -405,6 +407,10 @@ class Client implements Runnable {
 			write(dataOutputStream, op);
 			write(dataOutputStream, _user);
 			write(dataOutputStream, file_name);
+
+			UpperServiceService service = new UpperServiceService();
+			UpperService port = service.getUpperServicePort();
+			description = port.toUpperCase(description);
 			write(dataOutputStream, description);
 
 			//Read answer from server
