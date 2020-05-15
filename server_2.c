@@ -93,7 +93,7 @@ int count_rows(void *count, int argc, char **argv, char **azColName){
 
 char regist(char * user_name){
 	int rc;
-	char code = '5';
+	char code = '2';
 	char *zErrMsg = 0;
 	/* We use this method instead of sprintf() to avoid sqlInjection*/
 	char *query= sqlite3_mprintf("INSERT INTO USERS(USER_NAME) VALUES('%q');", user_name);
@@ -126,7 +126,7 @@ char regist(char * user_name){
 
 char unregister(char * user_name){
 	int rc;
-	char code = '5';
+	char code = '2';
 	char *zErrMsg = 0;
 	/* We use this method instead of sprintf() to avoid sqlInjection*/
 	char * query= sqlite3_mprintf("DROP TABLE %q;", user_name);
@@ -151,6 +151,54 @@ char unregister(char * user_name){
 		return code;
 	}
 	return '0';
+}
+
+char publish(char * user_name, char * file_name, char * file_description){
+	int rc;
+	char code = '4';
+	char *zErrMsg = 0;
+	if(user_exists(user_name) == 0){
+		code = '1';
+	}else if(user_connected(user_name) == 0){
+		code = '2';
+	}else if(file_exists(file_name,user_name) == 1){
+		code = '3';
+	}else{
+		char *query= sqlite3_mprintf("INSERT INTO %q(FILE_NAME, FILE_DESCRIPTION) VALUES('%q', '%q');",user_name, file_name, file_description);
+		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+		if( rc != SQLITE_OK ){
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    		sqlite3_free(zErrMsg);
+			code = '4';
+   		}else{
+			code='0';
+		}
+	}
+	return code;
+}
+
+char delete(char * user_name, char * file_name){
+	int rc;
+	char code = '4';
+	char *zErrMsg = 0;
+	if(user_exists(user_name) == 0){
+		code = '1';
+	}else if(user_connected(user_name) == 0){
+		code = '2';
+	}else if(file_exists(file_name,user_name) == 0){
+		code = '3';
+	}else{
+		char *query= sqlite3_mprintf("DELETE FROM %q WHERE FILE_NAME='%q';",user_name, file_name);
+		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+		if( rc != SQLITE_OK ){
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        	sqlite3_free(zErrMsg);
+			code = '4';
+   		}else{
+			code = '0';
+		}
+	}
+	return code;
 }
 
 /* executed by each thread to process the request*/
@@ -180,76 +228,24 @@ void process_request(int * sc){
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
 	}else if(strcmp(operation, "PUBLISH") == 0){
-		code ='4';
 		char file_name[256];
 		char file_description[256];
-
 		readLine(s_local,file_name,sizeof(file_name));
 		readLine(s_local,file_description,sizeof(file_description));
-
-		char *zErrMsg = 0;
-
 		pthread_mutex_lock(&mux_database);
-
-		if(user_exists(user_name) == 0){
-			code='1';
-		}if(user_connected(user_name) == 0){
-			code='2';
-		}else if(file_exists(file_name,user_name) == 1){
-			code='3';
-		}else{
-			char *query= sqlite3_mprintf("INSERT INTO %q(FILE_NAME, FILE_DESCRIPTION) VALUES('%q', '%q');",user_name, file_name, file_description);
-
-			rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-
-			if( rc != SQLITE_OK ){
-				fprintf(stderr, "SQL error: %s\n", zErrMsg);
-        		sqlite3_free(zErrMsg);
-   			}else{
-				code='0';
-			}
-		}
+		code = publish(user_name, file_name, file_description);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
-
-
 	}else if(strcmp(operation, "DELETE") == 0){
 		code ='4';
 		char file_name[256];
-
 		readLine(s_local,file_name,sizeof(file_name));
-
-		char *zErrMsg = 0;
-
 		pthread_mutex_lock(&mux_database);
-
-		if(user_exists(user_name) == 0){
-			code='1';
-		}else if(user_connected(user_name) == 0){
-			code='2';
-
-		}else if(file_exists(file_name,user_name) == 0){
-			code='3';
-
-		}else{
-
-
-		char *query= sqlite3_mprintf("DELETE FROM %q WHERE FILE_NAME='%q';",user_name, file_name);
-		
-		rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
-		if( rc != SQLITE_OK ){
-			fprintf(stderr, "SQL error: %s\n", zErrMsg);
-        	sqlite3_free(zErrMsg);
-   		}else{
-			 code='0';
-		   }
-		}
+		code = delete(user_name, file_name);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
-
-
 	}else if(strcmp(operation, "LIST_USERS") == 0){
 		char *zErrMsg = 0;
 		int num_users=0;
