@@ -10,20 +10,20 @@ import client.UpperService;
 class Client implements Runnable {
 
 	/******************* ATTRIBUTES *******************/
-	private static String _user = null;
-	private static String _server = null; // server IP
-	private static int _port = -1;
-	private static ServerSocket clientP2P = null;
+	protected static String _user = null;
+	protected static String _server = null; // server IP
+	protected static int _port = -1;
+	protected static ServerSocket clientP2P = null;
 	//Port where the client will listen for files requests
-	private static int _listening_port = 0;
-	private static String _upload_path = ".//files/Shared//";
-	private static String _downloads_path = ".//files/Downloads//";
-	private static final int MAX_FILE_SIZE = 1048576; //1MB
-	private static final int NAME_SIZE = 256;
+	protected static int _listening_port = 0;
+	protected static String _upload_path = ".//files/Shared//";
+	protected static String _downloads_path = ".//files/Downloads//";
+	protected static final int MAX_FILE_SIZE = 1048576; //1MB
+	protected static final int NAME_SIZE = 256;
 	// Thread in charge of sending requested files
-	private static Thread p2p_client_thread;
+	protected static Thread p2p_client_thread;
 	//Local storage of connected users. Required for GET_FILE
-	private static User[] userList;
+	protected static User[] userList;
 
 	/********************* METHODS ********************/
 
@@ -206,16 +206,15 @@ class Client implements Runnable {
         }
         switch(ans){
             case '0':
-                System.out.println("REGISTER OK");
-                break;
+				System.out.println("REGISTER OK");
+				return 0;
             case '1':
-                System.out.println("USERNAME IN USE");
-                break;
+				System.out.println("USERNAME IN USE");
+				return 1;
             default:
-                System.out.println("REGISTER FAIL");
-                break;
+				System.out.println("REGISTER FAIL");
+				return 2;
         }
-		return 0;
 	}
 	
 	/**
@@ -245,16 +244,15 @@ class Client implements Runnable {
         }
         switch(ans){
             case '0':
-                System.out.println("UNREGISTER OK");
-                break;
+				System.out.println("UNREGISTER OK");
+				return 0;
            case '1':
-                System.out.println("USER DOES NOT EXIST");
-                break;
+				System.out.println("USER DOES NOT EXIST");
+				return 1;
             default:
-                System.out.println("UNREGISTER FAIL");
-                break;
+				System.out.println("UNREGISTER FAIL");
+				return 2;
         }
-		return 0;
 	}
 	
     	/**
@@ -305,18 +303,17 @@ class Client implements Runnable {
 				Client p2p_client = new Client();
 				p2p_client_thread = new Thread(p2p_client);
 				p2p_client_thread.start();
-				break;
+				return 0;
 			case '1':
 				System.out.println("CONNECT FAIL, USER DOES NOT EXISTS");
-				break;
+				return 1;
 			case '2':
 				System.out.println("USER ALREADY CONNECTED");				
-				break;
+				return 2;
 			default:
 				System.out.println("CONNECT FAIL");				
-				break;
+				return 3;
 		}
-		return 0;		
 	}
 
 	
@@ -362,18 +359,17 @@ class Client implements Runnable {
 		switch(ans){
 			case '0':
 				System.out.println("DISCONNECT OK");
-				break;
+				return 0;
 			case '1':
 				System.out.println("DISCONNECT FAIL / USER DOES NOT EXISTS");
-				break;
+				return 1;
 			case '2':
 				System.out.println("DISCONNECT FAIL / USER NOT CONNECTED");				
-				break;
+				return 2;
 			default:
 				System.out.println("DISCONNECT FAIL");				
-				break;
+				return 3;
 		}		
-		return 0;
 	}
 
 	 /**
@@ -384,17 +380,14 @@ class Client implements Runnable {
 	 */
 	static int publish(String file_name, String description) 
 	{
-		if (file_name.length() > NAME_SIZE){
-			System.out.println("PUBLISH FAIL, FILE NAME TOO LONG");
-			return 0;
+		if ((file_name.length() > NAME_SIZE) || (description.length() > NAME_SIZE)){
+			System.out.println("PUBLISH FAIL");
+			return 4;
 		}
-		if (description.length() > NAME_SIZE){
-			System.out.println("PUBLISH FAIL, DESCRIPTION NAME TOO LONG");
-			return 0;
-		}
+
 		if (_user == null){
 			System.out.println("PUBLISH FAIL, USER NOT CONNECTED");
-			return 0;
+			return 2;
 		}
 		String op = "PUBLISH";
 		char ans = '4';
@@ -422,26 +415,25 @@ class Client implements Runnable {
 			sc.close();
 		} catch (Exception e){
             System.err.println("Exeption"+e.toString());
-            e.printStackTrace();
+			e.printStackTrace();
         }
 		switch(ans){
 			case '0':
 				System.out.println("PUBLISH OK");
-				break;
+				return 0;
 			case '1':
 				System.out.println("PUBLISH FAIL, USER DOES NOT EXISTS");
-				break;
+				return 1;
 			case '2':
 				System.out.println("PUBLISH FAIL, USER NOT CONNECTED");				
-				break;
+				return 2;
 			case '3':
 				System.out.println("PUBLISH FAIL, CONTENT ALREDAY PUBLISHED");				
-				break;	
+				return 3;	
 			default:
 				System.out.println("PUBLISH FAIL");				
-				break;
+				return 4;
 		}		
-		return 0;
 	}
 
 	 /**
@@ -455,7 +447,7 @@ class Client implements Runnable {
 		String op = "DELETE";
 		if (_user == null){
 			System.out.println("DELETE FAIL, USER NOT CONNECTED");
-			return 0;
+			return 2;
 		}
 		try{
 			Socket sc = new Socket(_server, _port);
@@ -476,26 +468,25 @@ class Client implements Runnable {
 			sc.close();
 		} catch (Exception e){
             System.err.println("Exeption"+e.toString());
-            e.printStackTrace();
+			e.printStackTrace();
         }
 		switch(ans){
 			case '0':
 				System.out.println("DELETE OK");
-				break;
+				return 0;
 			case '1':
 				System.out.println("DELETE FAIL, USER DOES NOT EXIST");
-				break;
+				return 1;
 			case '2':
 				System.out.println("DELETE FAIL, USER NOT CONNECTED");				
-				break;
+				return 2;
 			case '3':
 				System.out.println("DELETE FAIL, CONTENT NOT PUBLISHED");				
-				break;
+				return 3;
 			default:
 				System.out.println("DELETE FAIL");				
-				break;
+				return 4;
 		}		
-		return 0;
 	}
 
 	 /**
@@ -506,7 +497,7 @@ class Client implements Runnable {
 		char ans = '3';
 		if (_user == null){
 			System.out.println("LIST_USER FAIL, USER NOT CONNECTED");
-			return 0;
+			return 2;
 		}
 		//Create request message
 		String op = "LIST_USERS";
@@ -555,29 +546,33 @@ class Client implements Runnable {
 					//print the information of the i-th user 
 					System.out.println(i + " " + userList[i]+"\n");															
 				}
-			}else{
-				//If something went wrong select the message displayed according to the error number
-				switch (ans) {
-					case '1':
-						System.out.println("LIST_USERS FAIL, USER DOES NOT EXIST");
-						break;
-					case '2':
-						System.out.println("LIST_USERS FAIL, USER NOT CONNECTED");
-						break;
-					default:
-						System.out.println("LIST_USERS FAIL");
-						break;
-				}
 			}
+				
 			//Close the connection with the server
 			dataOutputStream.close();
 			dataInputStream.close();
 			sc.close();
+
+			//If something went wrong select the message displayed according to the error number
+			switch (ans) {
+				case '0':
+					//System.out.println("LIST_USERS OK");
+					return 0;
+				case '1':
+					System.out.println("LIST_USERS FAIL, USER DOES NOT EXIST");
+					return 1;
+				case '2':
+					System.out.println("LIST_USERS FAIL, USER NOT CONNECTED");
+					return 2;
+				default:
+					System.out.println("LIST_USERS FAIL");
+					return 3;
+			}
 		} catch(Exception e){
 			System.err.println("Communication error with the server");
 			e.printStackTrace();
+			return 3;
 		}
-		return 0;
 	}
 
 
@@ -612,46 +607,51 @@ class Client implements Runnable {
 			//Read answer
 			ans = read(dataInputStream);
 
-			switch (ans) {
-				case '0': //Everything ok
-					System.out.println("LIST_CONTENT OK\n");
-					int numFiles = Integer.parseInt(readString(dataInputStream));
-					//Print the connected users
-					System.out.println("User: " + user_name);
-					System.out.println("Shared files (" + numFiles + ") :");
-					//Read the null char passed after numFiles. Other wise
-					//read(dataInputStream);
-					for(int i = 0; i < numFiles; i++){
-						//For each file its name is sended
-						//String ln = "";
-						String ln = readString(dataInputStream);
-						//Print the i-th file name
-						System.out.println(ln);						
-					}						
-					break;
-				case '1':
-					System.out.println("LIST_CONTENT FAIL, USER DOES NOT EXIST");
-					break;
-				case '2':
-					System.out.println("LIST_CONTENT FAIL, USER NOT CONNECTED");
-					break;
-				case '3':
-					System.out.println("LIST_CONTENT FAIL, REMOTE USER DOES NOT EXIST");
-					break;					
-				default:
-					System.out.println("LIST_CONTENT FAIL");
-					break;
+			if(ans == '0'){
+				//Everything ok
+				System.out.println("LIST_CONTENT OK\n");
+				int numFiles = Integer.parseInt(readString(dataInputStream));
+				//Print the connected users
+				System.out.println("User: " + user_name);
+				System.out.println("Shared files (" + numFiles + ") :");
+				//Read the null char passed after numFiles. Other wise
+				//read(dataInputStream);
+				for(int i = 0; i < numFiles; i++){
+					//For each file its name is sended
+					//String ln = "";
+					String ln = readString(dataInputStream);
+					//Print the i-th file name
+					System.out.println(ln);						
+				}
 			}
+
 			//Close the connection with the server
 			dataInputStream.close();
 			dataOutputStream.close();
 			sc.close();
 
+			switch (ans) {
+				case '0': 						
+					return 0;
+				case '1':
+					System.out.println("LIST_CONTENT FAIL, USER DOES NOT EXIST");
+					return 1;
+				case '2':
+					System.out.println("LIST_CONTENT FAIL, USER NOT CONNECTED");
+					return 2;
+				case '3':
+					System.out.println("LIST_CONTENT FAIL, REMOTE USER DOES NOT EXIST");
+					return 3;					
+				default:
+					System.out.println("LIST_CONTENT FAIL");
+					return 4;
+			}
+
 		} catch(Exception e){
 			System.err.println("Communication error with the server");
 			e.printStackTrace();
+			return 4;
 		}
-		return 0;
 	}
 
 	 /**
@@ -667,18 +667,18 @@ class Client implements Runnable {
 		char ans = '2';
 
 		if (_user == null){
-			System.out.println("GET_FILE FAIL, USER NOT CONNECTED");
-			return 0;
+			System.out.println("GET_FILE FAIL");
+			return 2;
 		}
+		/*
 		if (user_name.equals(_user)){
 			System.out.println("GET_FILE FAIL");
 			return 0;
 		}
+		*/
 
 		try{
-			if (userList == null){
-				System.out.println();
-			}
+		
 			User remoteUser = User.findUserByName(userList, user_name);
 			//If the user could not be found means that the user is not connected, thus it cannot send the file
 			if(remoteUser == null){
@@ -692,7 +692,7 @@ class Client implements Runnable {
 				sc_p2p = new Socket(remoteUser.get_ip(), remoteUser.get_port());
 			} catch (Exception e) {
 				System.out.println("GET_FILE FAIL");
-				return 0;
+				return 2;
 			}
 			DataOutputStream dataOutputStream = new DataOutputStream(sc_p2p.getOutputStream());
 			DataInputStream dataInputStream = new DataInputStream(sc_p2p.getInputStream());
@@ -725,23 +725,22 @@ class Client implements Runnable {
 					fileOut.close();
 				}
 			}
-
-			switch (ans) {
-				case '0':
-					System.out.println("GET_FILE OK");
-					break;
-				case '1':
-					System.out.println("GET_FILE FAIL / FILE NOT EXIST");
-					break;				
-				default:
-					System.out.println("GET_FILE FAIL");
-					break;
-			}
 			//Close the connection with the other client
 			dataInputStream.close();
 			dataOutputStream.close();
 			sc_p2p.close();
-			
+
+			switch (ans) {
+				case '0':
+					System.out.println("GET_FILE OK");
+					return 0;
+				case '1':
+					System.out.println("GET_FILE FAIL / FILE NOT EXIST");
+					return 1;				
+				default:
+					System.out.println("GET_FILE FAIL");
+					return 2;
+			}
 		}catch(Exception e){
 			/* Possible exceptions:
 				IOException: I/O errors witht the input or output streams
@@ -749,8 +748,8 @@ class Client implements Runnable {
 			*/
 			System.err.println(e);
 			e.printStackTrace();
+			return 2;
 		}
-		return 0;
 	}
 
 	
