@@ -20,6 +20,7 @@
 sqlite3 *db; /*database object*/
 
 pthread_mutex_t mux_database;
+pthread_mutex_t mux_local;
 //mutex to protect access to database
 
 //TODO mutex to copy local variable
@@ -33,8 +34,10 @@ int  val, size;
 
 /* executed by each thread to process the request*/
 void process_request(int * sc){
-	int rc;	/*used to check return codes from database*/
 	int s_local = *sc;
+	pthread_mutex_unlock(&mux_local);
+
+	int rc;	/*used to check return codes from database*/
 
 	char code = '5'; /*code returned to client*/
 	char user_name[256];
@@ -233,7 +236,6 @@ void process_request(int * sc){
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);   
 	}
-	pthread_mutex_unlock(&mux_database);
 
 }
 void print_usage() {
@@ -287,6 +289,7 @@ int main(int argc, char *argv[]) {
 
 	/*init mutex*/
 	pthread_mutex_init(&mux_database,NULL);
+	pthread_mutex_init(&mux_local,NULL);
 
 	/*thread structures*/
 	pthread_attr_t t_attr;
@@ -297,6 +300,8 @@ int main(int argc, char *argv[]) {
 	int sc; /*file descriptor of the accepted request*/
 	while(1){
 		size = sizeof(client_addr);
+
+		pthread_mutex_lock(&mux_local);
 		sc = accept(sd, (struct sockaddr *) &client_addr,(socklen_t * restrict) &size);
 		/*When new request comes we create a thread to process it*/
 		pthread_create(&thid, &t_attr, (void *)process_request, &sc);
