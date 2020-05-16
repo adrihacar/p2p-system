@@ -8,16 +8,21 @@ CCGLAGS =	-Wall  -g
 LDFLAGS = -L$(INSTALL_PATH)/lib/
 LDLIBS = -lpthread -lsqlite3
 
+LIBS = libmyrpc.a
+
 
 all: CFLAGS=$(CCGLAGS)
 all: $(BIN_FILES)
 .PHONY : all
 
-server: server.o lines.o
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+server: server.o lines.o libmyrpc.a
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) libmyrpc.a -o $@
 
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+
+libmyrpc.a: myrpc.o
+	ar -rv libmyrpc.a myrpc.o
 
 upper/UpperService.class: upper/UpperService.java
 	javac -cp jaxws-ri/lib/*:. upper/UpperService.java
