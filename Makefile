@@ -34,7 +34,7 @@ Client.class User.class: Client.java User.java upper/UpperPublisher.class
 	javac *.java
 
 clean:
-	rm -f $(BIN_FILES) *.o *.db
+	rm -f $(BIN_FILES) *.o *.db $(LIBS)
 
 .SUFFIXES:
 .PHONY : clean

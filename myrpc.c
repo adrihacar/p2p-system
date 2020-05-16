@@ -17,6 +17,8 @@
 #include "myrpc.h"
 #include "myrpc.h"
 
+sqlite3 *db;
+
 /* Check if user exist */
 int user_exists(sqlite3 *db, char *user){
 	int res=1; /* 1 true, 0 false*/
@@ -83,7 +85,6 @@ int count_rows(sqlite3 *db, void *count, int argc, char **argv, char **azColName
 void init_database(){
 	int rc;
 	char *zErrMsg = 0;
-	sqlite3 *db;
 	char * init_query="CREATE TABLE USERS("  \
       "USER_NAME TEXT PRIMARY KEY     NOT NULL," \
 	  "IP    TEXT," \
@@ -101,21 +102,11 @@ void init_database(){
       fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);
    	}
-	//rc = sqlite3_close(db);
-   	//if(rc != SQLITE_OK) {
-   	//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   	//}
 }
 
 
 char my_register(char * user_name){
 	int rc;
-	sqlite3 *db;
-	rc = sqlite3_open("database.db", &db);
-   	if(rc) {
-   	   fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-   	   return '2';
-   	}
 	char code = '2';
 	char *zErrMsg = 0;
 	/* We use this method instead of sprintf() to avoid sqlInjection*/
@@ -129,10 +120,6 @@ char my_register(char * user_name){
 			code = '2';
 			fprintf(stderr, "SQL error: %s\n", zErrMsg);
 		}
-    	//rc = sqlite3_close(db);
-   		//if(rc != SQLITE_OK) {
-   		//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   		//}
 		return code;
    	}
 	/* If there are not errors we create one table for the user*/
@@ -145,27 +132,13 @@ char my_register(char * user_name){
       	sqlite3_free(zErrMsg);
 		code = '2';
 		fprintf(stderr, "SQL error: %s\n", zErrMsg);
-		//rc = sqlite3_close(db);
-   		//if(rc != SQLITE_OK) {
-   		//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   		//}
 		return code;
 	}
-	//rc = sqlite3_close(db);
-   	//if(rc != SQLITE_OK) {
-   	//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   	//}
 	return '0';
 }
 
 char unregister(char * user_name){
 	int rc;
-	sqlite3 *db;
-	rc = sqlite3_open("database.db", &db);
-   	if(rc) {
-   	   fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-   	   return '2';
-   	}
 	char code = '2';
 	char *zErrMsg = 0;
 	/* We use this method instead of sprintf() to avoid sqlInjection*/
@@ -180,10 +153,6 @@ char unregister(char * user_name){
 			code = '2';
 		}
     	sqlite3_free(zErrMsg);
-		//rc = sqlite3_close(db);
-   		//if(rc != SQLITE_OK) {
-   		//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   		//}
 		return code;
    	}
 	query= sqlite3_mprintf("DELETE FROM USERS WHERE USER_NAME='%q';", user_name);
@@ -192,24 +161,13 @@ char unregister(char * user_name){
     	sqlite3_free(zErrMsg);
 		code = '2';
 		fprintf(stderr, "SQL error: %s\n", zErrMsg);
-		//rc = sqlite3_close(db);
 		return code;
 	}
-	//rc = sqlite3_close(db);
-   	//if(rc != SQLITE_OK) {
-   	//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   	//}
 	return '0';
 }
 
 char publish(char * user_name, char * file_name, char * file_description){
 	int rc;
-	sqlite3 *db;
-	rc = sqlite3_open("database.db", &db);
-   	if(rc) {
-   	   fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-   	   return '4';
-   	}
 	char code = '4';
 	char *zErrMsg = 0;
 	if(user_exists(db, user_name) == 0){
@@ -229,21 +187,11 @@ char publish(char * user_name, char * file_name, char * file_description){
 			code='0';
 		}
 	}
-	//rc = sqlite3_close(db);
-   	//if(rc != SQLITE_OK) {
-   	//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   	//}
 	return code;
 }
 
 char my_delete(char * user_name, char * file_name){
 	int rc;
-	sqlite3 *db;
-	rc = sqlite3_open("database.db", &db);
-   	if(rc) {
-   	   fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-   	   return '4';
-   	}
 	char code = '4';
 	char *zErrMsg = 0;
 	if(user_exists(db, user_name) == 0){
@@ -263,21 +211,11 @@ char my_delete(char * user_name, char * file_name){
 			code = '0';
 		}
 	}
-	//rc = sqlite3_close(db);
-   	//if(rc != SQLITE_OK) {
-   	//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   	//}
 	return code;
 }
 
 char my_connect (char * user_name, char * clientip, char * client_port){
 	int rc;
-	sqlite3 *db;
-	rc = sqlite3_open("database.db", &db);
-   	if(rc) {
-   	   fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-   	   return '3';
-   	}
 	char code = '3';
 	char *zErrMsg = 0;
 	if(user_exists(db, user_name) == 0){
@@ -297,21 +235,11 @@ char my_connect (char * user_name, char * clientip, char * client_port){
 			code = '0';
 		}
 	}
-	//rc = sqlite3_close(db);
-   	//if(rc != SQLITE_OK) {
-   	//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   	//}
 	return code;
 }
 
 char disconnect (char * user_name){
 	int rc;
-	sqlite3 *db;
-	rc = sqlite3_open("database.db", &db);
-   	if(rc) {
-   	   fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-   	   return '3';
-   	}
 	char code = '3';
 	char *zErrMsg = 0;
 	if(user_exists(db, user_name) == 0){
@@ -330,9 +258,5 @@ char disconnect (char * user_name){
 			code='0';
 		}	
    	}
-	//rc = sqlite3_close(db);
-   	//if(rc != SQLITE_OK) {
-   	//	fprintf(stderr, "Can't close database: %s\n", sqlite3_errmsg(db));
-   	//}
 	return code;
 }

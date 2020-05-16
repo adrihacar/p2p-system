@@ -17,7 +17,7 @@ import javax.xml.ws.WebServiceFeature;
  * Generated source version: 2.2
  * 
  */
-@WebServiceClient(name = "UpperServiceService", targetNamespace = "http://upper/", wsdlLocation = "file:/home/pablo/git/distributed_systems/upper.wsdl")
+@WebServiceClient(name = "UpperServiceService", targetNamespace = "http://upper/", wsdlLocation = "file:upper.wsdl")
 public class UpperServiceService
     extends Service
 {
@@ -30,7 +30,7 @@ public class UpperServiceService
         URL url = null;
         WebServiceException e = null;
         try {
-            url = new URL("file:/home/pablo/git/distributed_systems/upper.wsdl");
+            url = new URL("file:upper.wsdl");
         } catch (MalformedURLException ex) {
             e = new WebServiceException(ex);
         }
