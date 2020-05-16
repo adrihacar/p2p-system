@@ -46,14 +46,14 @@ void process_request(int * sc){
 	puts("All data read, inserting in database");
 	if(strcmp(operation, "REGISTER") == 0){
 		pthread_mutex_lock(&mux_database);
-		code = my_register(db, user_name);
+		code = my_register(user_name);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
 
    	}else if(strcmp(operation, "UNREGISTER") == 0){
 		pthread_mutex_lock(&mux_database);
-		code = unregister(db, user_name);
+		code = unregister(user_name);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
@@ -63,7 +63,7 @@ void process_request(int * sc){
 		readLine(s_local,file_name,sizeof(file_name));
 		readLine(s_local,file_description,sizeof(file_description));
 		pthread_mutex_lock(&mux_database);
-		code = publish(db, user_name, file_name, file_description);
+		code = publish(user_name, file_name, file_description);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
@@ -71,7 +71,7 @@ void process_request(int * sc){
 		char file_name[256];
 		readLine(s_local,file_name,sizeof(file_name));
 		pthread_mutex_lock(&mux_database);
-		code = my_delete(db, user_name, file_name);
+		code = my_delete(user_name, file_name);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
@@ -222,13 +222,13 @@ void process_request(int * sc){
     	strcpy(clientip, inet_ntoa(addr.sin_addr));
 		puts(clientip);
 		pthread_mutex_lock(&mux_database);
-		code = my_connect(db, user_name,clientip,client_port);
+		code = my_connect(user_name,clientip,client_port);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
 	}else if(strcmp(operation, "DISCONNECT") == 0){
 		pthread_mutex_lock(&mux_database);
-		code = disconnect(db, user_name);
+		code = disconnect(user_name);
 		pthread_mutex_unlock(&mux_database);
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);   

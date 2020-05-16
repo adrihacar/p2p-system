@@ -11,20 +11,20 @@ int count_rows(sqlite3 *db, void *count, int argc, char **argv, char **azColName
 
 // create database
 
-void init_database(sqlite3 *db);
+void init_database();
 
 // Communication with database
 
-char my_register(sqlite3 *db, char * user_name);
+char my_register(char * user_name);
 
-char unregister(sqlite3 *db, char * user_name);
+char unregister(char * user_name);
 
-char publish(sqlite3 *db, char * user_name, char * file_name, char * file_description);
+char publish(char * user_name, char * file_name, char * file_description);
 
-char my_delete(sqlite3 *db, char * user_name, char * file_name);
+char my_delete(char * user_name, char * file_name);
 
-char my_connect (sqlite3 *db, char * user_name, char * clientip, char * client_port);
+char my_connect (char * user_name, char * clientip, char * client_port);
 
-char disconnect (sqlite3 *db, char * user_name);
+char disconnect (char * user_name);
 
 
