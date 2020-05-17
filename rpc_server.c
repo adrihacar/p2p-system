@@ -3,8 +3,24 @@
  * These are only templates and you can use them
  * as a guideline for developing your own functions.
  */
-
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sqlite3.h> /*libsqlite3-dev*/
+#include "lines.h"
+#include "myrpc.h"
 #include "rpc.h"
+
+sqlite3 * db;
 
 /* Check if user exist */
 int user_exists(sqlite3 *db, char *user){
@@ -286,7 +302,7 @@ list_users_1_svc(char *user_name, ruser *result,  struct svc_req *rqstp)
 	char *zErrMsg = 0;
 	int num_users=0;
 	char buf[256];
-
+	char code = '4';
 	if(user_exists(db, user_name) == 0){
 		code = '1';
 	}else if(user_connected(db, user_name) == 0){
@@ -346,6 +362,7 @@ list_content_1_svc(char *user_name, rcontent *result,  struct svc_req *rqstp)
 	char *zErrMsg = 0;
 	
 	char user_content[256];
+	char code = '4';
 	readLine(s_local,user_content, sizeof(user_content));
 
 	if(user_exists(db, user_name) == 0){
