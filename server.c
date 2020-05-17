@@ -79,17 +79,18 @@ void process_request(int * sc){
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
 	}else if(strcmp(operation, "LIST_USERS") == 0){
-		struct ruser
+		struct ruser ans = malloc(sizeof(struct ruser));
 		pthread_mutex_lock(&mux_database);
-		code = list_users(user_name);
+		list_users(user_name);
 		pthread_mutex_unlock(&mux_database);
+
 		enviar(s_local, &code, sizeof(code));
 		close(s_local);
 	}else if(strcmp(operation, "LIST_CONTENT") == 0){
 		char user_content[256];
 		readLine(s_local,user_content, sizeof(user_content));
 		pthread_mutex_lock(&mux_database);
-		code = list_content(user_content);
+		struct rcontent res = list_content(user_content);
 		pthread_mutex_unlock(&mux_database);
 		close(s_local);
 
