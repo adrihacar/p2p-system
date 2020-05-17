@@ -20,12 +20,12 @@ xdr_user (XDR *xdrs, user *objp)
 }
 
 bool_t
-xdr_user (XDR *xdrs, user *objp)
+xdr_luser (XDR *xdrs, luser *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_array (xdrs, (char **)&objp->user_val, (u_int *) &objp->user_len, ~0,
-		sizeof (luser), (xdrproc_t) xdr_luser))
+	 if (!xdr_array (xdrs, (char **)&objp->luser_val, (u_int *) &objp->luser_len, ~0,
+		sizeof (user), (xdrproc_t) xdr_user))
 		 return FALSE;
 	return TRUE;
 }
@@ -53,12 +53,12 @@ xdr_content (XDR *xdrs, content *objp)
 }
 
 bool_t
-xdr_content (XDR *xdrs, content *objp)
+xdr_lcontent (XDR *xdrs, lcontent *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_array (xdrs, (char **)&objp->content_val, (u_int *) &objp->content_len, ~0,
-		sizeof (lcontent), (xdrproc_t) xdr_lcontent))
+	 if (!xdr_array (xdrs, (char **)&objp->lcontent_val, (u_int *) &objp->lcontent_len, ~0,
+		sizeof (content), (xdrproc_t) xdr_content))
 		 return FALSE;
 	return TRUE;
 }

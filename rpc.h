@@ -23,33 +23,30 @@ struct user {
 typedef struct user user;
 
 typedef struct {
-	u_int user_len;
-	luser *user_val;
-} user;
+	u_int luser_len;
+	user *luser_val;
+} luser;
 
 struct ruser {
 	int err;
 	luser l;
 };
-
 typedef struct ruser ruser;
 
 struct content {
 	char *fileName;
 };
-
 typedef struct content content;
 
 typedef struct {
-	u_int content_len;
-	lcontent *content_val;
-} content;
+	u_int lcontent_len;
+	content *lcontent_val;
+} lcontent;
 
 struct rcontent {
 	int err;
 	lcontent l;
 };
-
 typedef struct rcontent rcontent;
 
 struct publish_1_argument {
@@ -140,10 +137,10 @@ extern int prog_1_freeresult ();
 
 #if defined(__STDC__) || defined(__cplusplus)
 extern  bool_t xdr_user (XDR *, user*);
-extern  bool_t xdr_user (XDR *, user*);
+extern  bool_t xdr_luser (XDR *, luser*);
 extern  bool_t xdr_ruser (XDR *, ruser*);
 extern  bool_t xdr_content (XDR *, content*);
-extern  bool_t xdr_content (XDR *, content*);
+extern  bool_t xdr_lcontent (XDR *, lcontent*);
 extern  bool_t xdr_rcontent (XDR *, rcontent*);
 extern  bool_t xdr_publish_1_argument (XDR *, publish_1_argument*);
 extern  bool_t xdr_my_delete_1_argument (XDR *, my_delete_1_argument*);
@@ -151,10 +148,10 @@ extern  bool_t xdr_my_connect_1_argument (XDR *, my_connect_1_argument*);
 
 #else /* K&R C */
 extern bool_t xdr_user ();
-extern bool_t xdr_user ();
+extern bool_t xdr_luser ();
 extern bool_t xdr_ruser ();
 extern bool_t xdr_content ();
-extern bool_t xdr_content ();
+extern bool_t xdr_lcontent ();
 extern bool_t xdr_rcontent ();
 extern bool_t xdr_publish_1_argument ();
 extern bool_t xdr_my_delete_1_argument ();

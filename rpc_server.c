@@ -303,6 +303,7 @@ list_users_1_svc(char *user_name, ruser *result,  struct svc_req *rqstp)
 	int num_users=0;
 	char buf[256];
 	char code = '4';
+	int rc = 0;
 	if(user_exists(db, user_name) == 0){
 		code = '1';
 	}else if(user_connected(db, user_name) == 0){
@@ -334,7 +335,7 @@ list_users_1_svc(char *user_name, ruser *result,  struct svc_req *rqstp)
 				while (step == SQLITE_ROW) {
 
 					sprintf(buf, "%s", sqlite3_column_text(res, 0));
-					strcpy(user->name, &buf);
+					strcpy(us->name, &buf);
 
 					sprintf(buf, "%s", sqlite3_column_text(res, 1));
 					strcpy(us->ip, &buf);
@@ -363,7 +364,7 @@ list_content_1_svc(char *user_name, rcontent *result,  struct svc_req *rqstp)
 	
 	char user_content[256];
 	char code = '4';
-	readLine(s_local,user_content, sizeof(user_content));
+	int rc = 0;
 
 	if(user_exists(db, user_name) == 0){
 		code = '1';
@@ -391,8 +392,8 @@ list_content_1_svc(char *user_name, rcontent *result,  struct svc_req *rqstp)
 
 		code = '0';
 
-		result->l->content_len = num_content;
-		struct content * cont = result->l->content_val;
+		result->l.lcontent_len = num_content;
+		struct content * cont = result->l.lcontent_val;
 		int step = sqlite3_step(res);
 		while(step == SQLITE_ROW) {
 			
