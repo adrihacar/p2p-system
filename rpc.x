@@ -5,7 +5,7 @@ struct user {
     string port <8>;
 };
 
-typedef user luser<>;
+typedef struct user luser<>;
 
 struct ruser {
     int err;
@@ -16,7 +16,7 @@ struct content {
     string fileName<256>;
 };
 
-typedef content lcontent<>;
+typedef struct content lcontent<>;
 
 struct rcontent {
     int err;
