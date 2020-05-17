@@ -22,7 +22,7 @@ OBJECTS_SVC = $(SOURCES_SVC.c:%.c=%.o) $(TARGETS_SVC.c:%.c=%.o)
 
 CPPFLAGS += -D_REENTRANT
 CFLAGS += -g 
-LDLIBS += -lnsl -lpthread 
+LDLIBS += -lnsl -lpthread -lsqlite3
  RPCGENFLAGS = 
 
 # Targets 

@@ -1,3 +1,6 @@
+import java.util.Arrays;
+
+
 public class Test {
 
     public static final String _server = "localhost";
@@ -23,13 +26,18 @@ public class Test {
         //Variables to assert the test result
         int[] expected_out = {0, 0, 1, 2};
         int[] server_answers = new int[expected_out.length];
+        
 
         server_answers[0] = Client.register(user1);
         server_answers[1] = Client.register(user2);
         server_answers[2] = Client.register(user2);
         server_answers[1] = Client.register(name);
 
-        if(server_answers.equals(expected_out)){
+        for (int i = 0; i < server_answers.length; i++){
+            System.out.println();
+        }
+
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 1: SUCCESS");
             return 0;
         }else{
@@ -55,7 +63,7 @@ public class Test {
         server_answers[1] = Client.connect(user1);
         server_answers[2] = Client.connect(user1);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 2: SUCCESS");
             return 0;
         }else{
@@ -82,7 +90,7 @@ public class Test {
         server_answers[3] = Client.publish(file_2, "bubbles");
 
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 3: SUCCESS");
             return 0;
         }else{
@@ -106,7 +114,7 @@ public class Test {
 
         server_answers[0] = Client.list_users();
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 4: SUCCESS");
             return 0;
         }else{
@@ -131,7 +139,7 @@ public class Test {
         server_answers[2] = Client.delete(file_2);
         server_answers[3] = Client.list_content(user1);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 5: SUCCESS");
             return 0;
         }else{
@@ -153,7 +161,7 @@ public class Test {
 
         server_answers[0] = Client.list_content(nonExistent);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 6: SUCCESS");
             return 0;
         }else{
@@ -176,7 +184,7 @@ public class Test {
         server_answers[0] = Client.get_file(user1, nonExistent, "test7.txt");
         server_answers[1] = Client.get_file(user1, file_1, "test7.txt");
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 7: SUCCESS");
             return 0;
         }else{
@@ -200,7 +208,7 @@ public class Test {
         server_answers[1] = Client.disconnect(user1);
         server_answers[2] = Client.disconnect(user1);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 8: SUCCESS");
             return 0;
         }else{
@@ -222,7 +230,7 @@ public class Test {
 
         server_answers[0] = Client.publish(file_2, "description");
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 9: SUCCESS");
             return 0;
         }else{
@@ -244,7 +252,7 @@ public class Test {
 
         server_answers[0] = Client.delete(file_1);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 10: SUCCESS");
             return 0;
         }else{
@@ -266,7 +274,7 @@ public class Test {
 
         server_answers[0] = Client.list_users();
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 11: SUCCESS");
             return 0;
         }else{
@@ -288,7 +296,7 @@ public class Test {
 
         server_answers[0] = Client.list_content(user1);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 12: SUCCESS");
             return 0;
         }else{
@@ -309,7 +317,7 @@ public class Test {
         int[] server_answers = new int[expected_out.length];
 
         server_answers[0] = Client.get_file(user1, file_1, "test13.txt");
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 13: SUCCESS");
             return 0;
         }else{
@@ -333,7 +341,7 @@ public class Test {
         server_answers[1] = Client.unregister(user2);
         server_answers[2] = Client.unregister(nonExistent);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 14: SUCCESS");
             return 0;
         }else{
@@ -355,7 +363,7 @@ public class Test {
 
         server_answers[0] = Client.publish(file_1, "description");
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 15: SUCCESS");
             return 0;
         }else{
@@ -377,7 +385,7 @@ public class Test {
 
         server_answers[0] = Client.delete(file_1);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 16: SUCCESS");
             return 0;
         }else{
@@ -399,7 +407,7 @@ public class Test {
 
         server_answers[0] = Client.list_users();
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 17: SUCCESS");
             return 0;
         }else{
@@ -421,7 +429,7 @@ public class Test {
 
         server_answers[0] = Client.list_content(user1);
 
-        if(server_answers.equals(expected_out)){
+        if(Arrays.equals(server_answers, expected_out)){
             System.out.println("TEST 18: SUCCESS");
             return 0;
         }else{

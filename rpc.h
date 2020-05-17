@@ -39,43 +39,49 @@ typedef struct my_connect_1_argument my_connect_1_argument;
 #define PROGVER 1
 
 #if defined(__STDC__) || defined(__cplusplus)
-#define my_register 1
+#define init_database 1
+extern  enum clnt_stat init_database_1(void *, CLIENT *);
+extern  bool_t init_database_1_svc(void *, struct svc_req *);
+#define my_register 2
 extern  enum clnt_stat my_register_1(char *, char *, CLIENT *);
 extern  bool_t my_register_1_svc(char *, char *, struct svc_req *);
-#define unregister 2
+#define unregister 3
 extern  enum clnt_stat unregister_1(char *, char *, CLIENT *);
 extern  bool_t unregister_1_svc(char *, char *, struct svc_req *);
-#define publish 3
+#define publish 4
 extern  enum clnt_stat publish_1(char *, char *, char *, char *, CLIENT *);
 extern  bool_t publish_1_svc(char *, char *, char *, char *, struct svc_req *);
-#define my_delete 4
+#define my_delete 5
 extern  enum clnt_stat my_delete_1(char *, char *, char *, CLIENT *);
 extern  bool_t my_delete_1_svc(char *, char *, char *, struct svc_req *);
-#define my_connect 5
+#define my_connect 6
 extern  enum clnt_stat my_connect_1(char *, char *, char *, char *, CLIENT *);
 extern  bool_t my_connect_1_svc(char *, char *, char *, char *, struct svc_req *);
-#define disconnect 6
+#define disconnect 7
 extern  enum clnt_stat disconnect_1(char *, char *, CLIENT *);
 extern  bool_t disconnect_1_svc(char *, char *, struct svc_req *);
 extern int prog_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
-#define my_register 1
+#define init_database 1
+extern  enum clnt_stat init_database_1();
+extern  bool_t init_database_1_svc();
+#define my_register 2
 extern  enum clnt_stat my_register_1();
 extern  bool_t my_register_1_svc();
-#define unregister 2
+#define unregister 3
 extern  enum clnt_stat unregister_1();
 extern  bool_t unregister_1_svc();
-#define publish 3
+#define publish 4
 extern  enum clnt_stat publish_1();
 extern  bool_t publish_1_svc();
-#define my_delete 4
+#define my_delete 5
 extern  enum clnt_stat my_delete_1();
 extern  bool_t my_delete_1_svc();
-#define my_connect 5
+#define my_connect 6
 extern  enum clnt_stat my_connect_1();
 extern  bool_t my_connect_1_svc();
-#define disconnect 6
+#define disconnect 7
 extern  enum clnt_stat disconnect_1();
 extern  bool_t disconnect_1_svc();
 extern int prog_1_freeresult ();

@@ -17,6 +17,12 @@
 #endif
 
 int
+_init_database_1 (void  *argp, void *result, struct svc_req *rqstp)
+{
+	return (init_database_1_svc(result, rqstp));
+}
+
+int
 _my_register_1 (char * *argp, void *result, struct svc_req *rqstp)
 {
 	return (my_register_1_svc(*argp, result, rqstp));
@@ -79,6 +85,12 @@ prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 	case NULLPROC:
 		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
 		return;
+
+	case init_database:
+		_xdr_argument = (xdrproc_t) xdr_void;
+		_xdr_result = (xdrproc_t) xdr_void;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_init_database_1;
+		break;
 
 	case my_register:
 		_xdr_argument = (xdrproc_t) xdr_wrapstring;

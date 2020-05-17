@@ -10,6 +10,15 @@
 static struct timeval TIMEOUT = { 25, 0 };
 
 enum clnt_stat 
+init_database_1(void *clnt_res, CLIENT *clnt)
+{
+	 return (clnt_call (clnt, init_database, (xdrproc_t) xdr_void, (caddr_t) NULL,
+		(xdrproc_t) xdr_void, (caddr_t) clnt_res,
+		TIMEOUT));
+
+}
+
+enum clnt_stat 
 my_register_1(char *user_name, char *clnt_res,  CLIENT *clnt)
 {
 	return (clnt_call(clnt, my_register,
