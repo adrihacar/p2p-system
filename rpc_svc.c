@@ -58,6 +58,18 @@ _disconnect_1 (char * *argp, void *result, struct svc_req *rqstp)
 	return (disconnect_1_svc(*argp, result, rqstp));
 }
 
+int
+_list_users_1 (char * *argp, void *result, struct svc_req *rqstp)
+{
+	return (list_users_1_svc(*argp, result, rqstp));
+}
+
+int
+_list_content_1 (char * *argp, void *result, struct svc_req *rqstp)
+{
+	return (list_content_1_svc(*argp, result, rqstp));
+}
+
 static void
 prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
@@ -68,6 +80,8 @@ prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		my_delete_1_argument my_delete_1_arg;
 		my_connect_1_argument my_connect_1_arg;
 		char *disconnect_1_arg;
+		char *list_users_1_arg;
+		char *list_content_1_arg;
 	} argument;
 	union {
 		char my_register_1_res;
@@ -76,6 +90,8 @@ prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		char my_delete_1_res;
 		char my_connect_1_res;
 		char disconnect_1_res;
+		ruser list_users_1_res;
+		rcontent list_content_1_res;
 	} result;
 	bool_t retval;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -126,6 +142,18 @@ prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		_xdr_argument = (xdrproc_t) xdr_wrapstring;
 		_xdr_result = (xdrproc_t) xdr_char;
 		local = (bool_t (*) (char *, void *,  struct svc_req *))_disconnect_1;
+		break;
+
+	case list_users:
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
+		_xdr_result = (xdrproc_t) xdr_ruser;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_list_users_1;
+		break;
+
+	case list_content:
+		_xdr_argument = (xdrproc_t) xdr_wrapstring;
+		_xdr_result = (xdrproc_t) xdr_rcontent;
+		local = (bool_t (*) (char *, void *,  struct svc_req *))_list_content_1;
 		break;
 
 	default:

@@ -79,141 +79,19 @@ void process_request(int * sc){
 		enviar(s_local,&code,sizeof(code));
 		close(s_local);
 	}else if(strcmp(operation, "LIST_USERS") == 0){
-		char *zErrMsg = 0;
-		int num_users=0;
-		char buf[256];
-
+		struct ruser
 		pthread_mutex_lock(&mux_database);
-
-		if(user_exists(db, user_name) == 0){
-			code='1';
-			pthread_mutex_unlock(&mux_database);
-			enviar(s_local,&code,sizeof(code));
-			close(s_local);
-			pthread_exit(NULL);
-		}if(user_connected(db, user_name) == 0){
-			code='2';
-			pthread_mutex_unlock(&mux_database);
-			enviar(s_local,&code,sizeof(code));
-			close(s_local);
-			pthread_exit(NULL);
-		}else{
-
-		/*FIRST WE RETRIEVE THE NUMBER OF THE USERS WITH COUNT*/
-		char * query= "SELECT COUNT(*) FROM USERS WHERE PORT IS NOT NULL";
-		printf("%s",query);
-		rc = SQLITE_OK;//sqlite3_exec(db, query, count_rows, &num_users, &zErrMsg);
-		if( rc != SQLITE_OK ){
-			code='3';
-			enviar(s_local,&code,sizeof(code));
-			close(s_local);
-			fprintf(stderr, "SQL error: %s\n", zErrMsg);
-			pthread_exit(NULL);
-		}
-
-		sqlite3_stmt *res;
-		
-		char *sql = "SELECT * FROM USERS WHERE PORT IS NOT NULL";
-    	rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
-        if(rc != SQLITE_OK){
-			code='3';
-			enviar(s_local,&code,sizeof(code));
-			close(s_local);
-			pthread_mutex_unlock(&mux_database);
-        	fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
-			pthread_exit(NULL);
-		}
-			code='0';
-			enviar(s_local,&code,sizeof(code));
-
-
-			sprintf(buf, "%d", num_users);
-			enviar(s_local,buf,strlen(buf)+1);
-
-   		int step = sqlite3_step(res);
-    	while (step == SQLITE_ROW) {
-
-			sprintf(buf, "%s", sqlite3_column_text(res, 0));
-			enviar(s_local,buf,strlen(buf)+1);
-
-			sprintf(buf, "%s", sqlite3_column_text(res, 1));
-			enviar(s_local,buf,strlen(buf)+1);
-
-			sprintf(buf, "%s", sqlite3_column_text(res, 2));
-			enviar(s_local,buf,strlen(buf)+1);
-
-			step = sqlite3_step(res);
-		}
+		code = list_users(user_name);
 		pthread_mutex_unlock(&mux_database);
+		enviar(s_local, &code, sizeof(code));
 		close(s_local);
-		}
-
 	}else if(strcmp(operation, "LIST_CONTENT") == 0){
-		char buf[256];
-		char *zErrMsg = 0;
 		char user_content[256];
-
-
 		readLine(s_local,user_content, sizeof(user_content));
-
-
 		pthread_mutex_lock(&mux_database);
-
-
-		if(user_exists(db, user_name) == 0){
-			code='1';
-			pthread_mutex_unlock(&mux_database);
-			enviar(s_local,&code,sizeof(code));
-			close(s_local);
-			pthread_exit(NULL);
-		}else if(user_connected(db, user_name) == 0){
-			code='2';
-			pthread_mutex_unlock(&mux_database);
-			enviar(s_local,&code,sizeof(code));
-			close(s_local);
-			pthread_exit(NULL);
-		}else if(user_exists(db, user_content) == 0){
-			code='3';
-			pthread_mutex_unlock(&mux_database);
-			enviar(s_local,&code,sizeof(code));
-			close(s_local);
-			pthread_exit(NULL);
-
-		}else{
-
-
-		int num_content=0;
-		char * query= sqlite3_mprintf("SELECT COUNT(*) FROM %q",user_content);
-
-		rc = SQLITE_OK;//sqlite3_exec(db, query, count_rows, &num_content, &zErrMsg);
-		printf("%s",query);
-		if( rc != SQLITE_OK ){
-				fprintf(stderr, "SQL error: %s\n", zErrMsg);
-		}
-		
-		sqlite3_stmt *res;
-		
-		char *sql =sqlite3_mprintf("SELECT * FROM %q", user_content ) ;
-    	rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
-        if(rc != SQLITE_OK){
-        	fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
-		}
-
-		code='0';
-		enviar(s_local,&code,sizeof(code));
-
-		sprintf(buf, "%d", num_content);
-		enviar(s_local,buf,strlen(buf)+1);
-    
-   		int step = sqlite3_step(res);
-    	while(step == SQLITE_ROW) {
-			sprintf(buf, "%s", sqlite3_column_text(res, 0));
-			enviar(s_local,buf,strlen(buf)+1);
-			step = sqlite3_step(res);
-		}
+		code = list_content(user_content);
 		pthread_mutex_unlock(&mux_database);
 		close(s_local);
-		}
 
 	}else if(strcmp(operation, "CONNECT") == 0){
 		char client_port[8];

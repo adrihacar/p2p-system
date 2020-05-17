@@ -5,51 +5,6 @@
  */
 
 #include "rpc.h"
-#include <stdio.h>
-#include <sqlite3.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <getopt.h>
-#include <netdb.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sqlite3.h> /*libsqlite3-dev*/
-
-
-sqlite3 *db;
-bool_t
-init_database_1_svc(void *result, struct svc_req *rqstp)
-{
-	bool_t retval = 0;
-
-	int rc;
-	char *zErrMsg = 0;
-	char * init_query="CREATE TABLE USERS("  \
-      "USER_NAME TEXT PRIMARY KEY     NOT NULL," \
-	  "IP    TEXT," \
-	  "PORT TEXT);";
-
-	remove("database.db");
-	rc = sqlite3_open("database.db", &db);
-   	if(rc) {
-   	   fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-   	   return;
-   	}
-
-	rc = sqlite3_exec(db, init_query, NULL, 0, &zErrMsg);
-	if( rc != SQLITE_OK ){
-      fprintf(stderr, "SQL error: %s\n", zErrMsg);
-      sqlite3_free(zErrMsg);
-   	}
-
-	return retval;
-}
 
 /* Check if user exist */
 int user_exists(sqlite3 *db, char *user){
@@ -105,16 +60,33 @@ int file_exists(sqlite3 *db, char *file, char *user){
 	return result;
 }
 
+bool_t
+init_database_1_svc(void *result, struct svc_req *rqstp)
+{
+	bool_t retval;
 
-/* CALLBACK function from the count query*/
-int count_rows(sqlite3 *db, void *count, int argc, char **argv, char **azColName){
-	int *count_int= count;
-	*count_int= atoi(argv[0]);
-	
-	return 0;
+	int rc;
+	char *zErrMsg = 0;
+	char * init_query="CREATE TABLE USERS("  \
+      "USER_NAME TEXT PRIMARY KEY     NOT NULL," \
+	  "IP    TEXT," \
+	  "PORT TEXT);";
+
+	remove("database.db");
+	rc = sqlite3_open("database.db", &db);
+   	if(rc) {
+   	   fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+   	   return;
+   	}
+
+	rc = sqlite3_exec(db, init_query, NULL, 0, &zErrMsg);
+	if( rc != SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+   	}
+
+	return retval;
 }
-
-
 
 bool_t
 my_register_1_svc(char *user_name, char *result,  struct svc_req *rqstp)
@@ -307,6 +279,117 @@ disconnect_1_svc(char *user_name, char *result,  struct svc_req *rqstp)
 	return retval;
 }
 
+bool_t
+list_users_1_svc(char *user_name, ruser *result,  struct svc_req *rqstp)
+{
+	bool_t retval;
+	char *zErrMsg = 0;
+	int num_users=0;
+	char buf[256];
+
+	if(user_exists(db, user_name) == 0){
+		code = '1';
+	}else if(user_connected(db, user_name) == 0){
+		code = '2';
+	}else{
+		/*FIRST WE RETRIEVE THE NUMBER OF THE USERS WITH COUNT*/
+		char * query= "SELECT COUNT(*) FROM USERS WHERE PORT IS NOT NULL";
+		printf("%s",query);
+		rc = SQLITE_OK;//sqlite3_exec(db, query, count_rows, &num_users, &zErrMsg);
+		if( rc != SQLITE_OK ){
+			code = '3';
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+		}else {
+			sqlite3_stmt *res;
+
+			char *sql = "SELECT * FROM USERS WHERE PORT IS NOT NULL";
+			rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
+			if(rc != SQLITE_OK){
+				code = '3';
+				fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+			}else{
+				code = '0';
+
+				result->l->user_len = num_users;
+
+				int step = sqlite3_step(res);
+				struct user * us = result->l->user_val;
+
+				while (step == SQLITE_ROW) {
+
+					sprintf(buf, "%s", sqlite3_column_text(res, 0));
+					strcpy(user->name, &buf);
+
+					sprintf(buf, "%s", sqlite3_column_text(res, 1));
+					strcpy(us->ip, &buf);
+
+					sprintf(buf, "%s", sqlite3_column_text(res, 2));
+					strcpy(us->port, &buf);
+
+					step = sqlite3_step(res);
+					us++;
+				}
+			}
+		}
+	}
+	result->err = code;
+	//result->l = list_users;
+	return retval;
+}
+
+bool_t
+list_content_1_svc(char *user_name, rcontent *result,  struct svc_req *rqstp)
+{
+	bool_t retval;
+
+	char buf[256];
+	char *zErrMsg = 0;
+	
+	char user_content[256];
+	readLine(s_local,user_content, sizeof(user_content));
+
+	if(user_exists(db, user_name) == 0){
+		code = '1';
+	}else if(user_connected(db, user_name) == 0){
+		code = '2';
+	}else if(user_exists(db, user_content) == 0){
+		code = '3';
+	}else {
+		int num_content=0;
+		char * query = sqlite3_mprintf("SELECT COUNT(*) FROM %q",user_content);
+
+		rc = SQLITE_OK;//sqlite3_exec(db, query, count_rows, &num_content, &zErrMsg);
+		printf("%s",query);
+		if( rc != SQLITE_OK ){
+			fprintf(stderr, "SQL error: %s\n", zErrMsg);
+		}
+		
+		sqlite3_stmt *res;
+		
+		char *sql = sqlite3_mprintf("SELECT * FROM %q", user_content ) ;
+		rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
+		if(rc != SQLITE_OK){
+			fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		}
+
+		code = '0';
+
+		result->l->content_len = num_content;
+		struct content * cont = result->l->content_val;
+		int step = sqlite3_step(res);
+		while(step == SQLITE_ROW) {
+			
+			sprintf(buf, "%s", sqlite3_column_text(res, 0));
+			//Copy the file name into the struct result
+			strcpy(cont->fileName, &buf);
+			step = sqlite3_step(res);
+			cont++;
+		}
+	}
+	result->err = code;
+	return retval;
+}
+
 int
 prog_1_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
 {
@@ -318,5 +401,3 @@ prog_1_freeresult (SVCXPRT *transp, xdrproc_t xdr_result, caddr_t result)
 
 	return 1;
 }
-
-

@@ -15,6 +15,43 @@ extern "C" {
 #endif
 
 
+struct user {
+	char *name;
+	char *ip;
+	char *port;
+};
+typedef struct user user;
+
+typedef struct {
+	u_int user_len;
+	luser *user_val;
+} user;
+
+struct ruser {
+	int err;
+	luser l;
+};
+
+typedef struct ruser ruser;
+
+struct content {
+	char *fileName;
+};
+
+typedef struct content content;
+
+typedef struct {
+	u_int content_len;
+	lcontent *content_val;
+} content;
+
+struct rcontent {
+	int err;
+	lcontent l;
+};
+
+typedef struct rcontent rcontent;
+
 struct publish_1_argument {
 	char *user_name;
 	char *file_name;
@@ -60,6 +97,12 @@ extern  bool_t my_connect_1_svc(char *, char *, char *, char *, struct svc_req *
 #define disconnect 7
 extern  enum clnt_stat disconnect_1(char *, char *, CLIENT *);
 extern  bool_t disconnect_1_svc(char *, char *, struct svc_req *);
+#define list_users 8
+extern  enum clnt_stat list_users_1(char *, ruser *, CLIENT *);
+extern  bool_t list_users_1_svc(char *, ruser *, struct svc_req *);
+#define list_content 9
+extern  enum clnt_stat list_content_1(char *, rcontent *, CLIENT *);
+extern  bool_t list_content_1_svc(char *, rcontent *, struct svc_req *);
 extern int prog_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
@@ -84,17 +127,35 @@ extern  bool_t my_connect_1_svc();
 #define disconnect 7
 extern  enum clnt_stat disconnect_1();
 extern  bool_t disconnect_1_svc();
+#define list_users 8
+extern  enum clnt_stat list_users_1();
+extern  bool_t list_users_1_svc();
+#define list_content 9
+extern  enum clnt_stat list_content_1();
+extern  bool_t list_content_1_svc();
 extern int prog_1_freeresult ();
 #endif /* K&R C */
 
 /* the xdr functions */
 
 #if defined(__STDC__) || defined(__cplusplus)
+extern  bool_t xdr_user (XDR *, user*);
+extern  bool_t xdr_user (XDR *, user*);
+extern  bool_t xdr_ruser (XDR *, ruser*);
+extern  bool_t xdr_content (XDR *, content*);
+extern  bool_t xdr_content (XDR *, content*);
+extern  bool_t xdr_rcontent (XDR *, rcontent*);
 extern  bool_t xdr_publish_1_argument (XDR *, publish_1_argument*);
 extern  bool_t xdr_my_delete_1_argument (XDR *, my_delete_1_argument*);
 extern  bool_t xdr_my_connect_1_argument (XDR *, my_connect_1_argument*);
 
 #else /* K&R C */
+extern bool_t xdr_user ();
+extern bool_t xdr_user ();
+extern bool_t xdr_ruser ();
+extern bool_t xdr_content ();
+extern bool_t xdr_content ();
+extern bool_t xdr_rcontent ();
 extern bool_t xdr_publish_1_argument ();
 extern bool_t xdr_my_delete_1_argument ();
 extern bool_t xdr_my_connect_1_argument ();

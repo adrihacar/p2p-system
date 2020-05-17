@@ -79,3 +79,21 @@ disconnect_1(char *user_name, char *clnt_res,  CLIENT *clnt)
 		(xdrproc_t) xdr_char, (caddr_t) clnt_res,
 		TIMEOUT));
 }
+
+enum clnt_stat 
+list_users_1(char *user_name, ruser *clnt_res,  CLIENT *clnt)
+{
+	return (clnt_call(clnt, list_users,
+		(xdrproc_t) xdr_wrapstring, (caddr_t) &user_name,
+		(xdrproc_t) xdr_ruser, (caddr_t) clnt_res,
+		TIMEOUT));
+}
+
+enum clnt_stat 
+list_content_1(char *user_name, rcontent *clnt_res,  CLIENT *clnt)
+{
+	return (clnt_call(clnt, list_content,
+		(xdrproc_t) xdr_wrapstring, (caddr_t) &user_name,
+		(xdrproc_t) xdr_rcontent, (caddr_t) clnt_res,
+		TIMEOUT));
+}

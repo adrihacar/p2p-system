@@ -16,26 +16,32 @@ prog_1(char *host)
 	enum clnt_stat retval_2;
 	char result_2;
 	char *my_register_1_user_name;
-	//enum clnt_stat retval_3;
-	//char result_3;
-	//char *unregister_1_user_name;
-	//enum clnt_stat retval_4;
-	//char result_4;
-	//char *publish_1_user_name;
-	//char *publish_1_file_name;
-	//char *publish_1_file_description;
-	//enum clnt_stat retval_5;
-	//char result_5;
-	//char *my_delete_1_user_name;
-	//char *my_delete_1_file_name;
-	//enum clnt_stat retval_6;
-	//char result_6;
-	//char *my_connect_1_user_name;
-	//char *my_connect_1_clientip;
-	//char *my_connect_1_client_port;
-	//enum clnt_stat retval_7;
-	//char result_7;
-	//char *disconnect_1_user_name;
+	enum clnt_stat retval_3;
+	char result_3;
+	char *unregister_1_user_name;
+	enum clnt_stat retval_4;
+	char result_4;
+	char *publish_1_user_name;
+	char *publish_1_file_name;
+	char *publish_1_file_description;
+	enum clnt_stat retval_5;
+	char result_5;
+	char *my_delete_1_user_name;
+	char *my_delete_1_file_name;
+	enum clnt_stat retval_6;
+	char result_6;
+	char *my_connect_1_user_name;
+	char *my_connect_1_clientip;
+	char *my_connect_1_client_port;
+	enum clnt_stat retval_7;
+	char result_7;
+	char *disconnect_1_user_name;
+	enum clnt_stat retval_8;
+	ruser result_8;
+	char *list_users_1_user_name;
+	enum clnt_stat retval_9;
+	rcontent result_9;
+	char *list_content_1_user_name;
 
 #ifndef	DEBUG
 	clnt = clnt_create (host, PROG, PROGVER, "udp");
@@ -49,30 +55,38 @@ prog_1(char *host)
 	if (retval_1 != RPC_SUCCESS) {
 		clnt_perror (clnt, "call failed");
 	}
-	retval_2 = my_register_1("hola", &result_2, clnt);
+	retval_2 = my_register_1(my_register_1_user_name, &result_2, clnt);
 	if (retval_2 != RPC_SUCCESS) {
 		clnt_perror (clnt, "call failed");
 	}
-	//retval_3 = unregister_1(unregister_1_user_name, &result_3, clnt);
-	//if (retval_3 != RPC_SUCCESS) {
-	//	clnt_perror (clnt, "call failed");
-	//}
-	//retval_4 = publish_1(publish_1_user_name, publish_1_file_name, publish_1_file_description, &result_4, clnt);
-	//if (retval_4 != RPC_SUCCESS) {
-	//	clnt_perror (clnt, "call failed");
-	//}
-	//retval_5 = my_delete_1(my_delete_1_user_name, my_delete_1_file_name, &result_5, clnt);
-	//if (retval_5 != RPC_SUCCESS) {
-	//	clnt_perror (clnt, "call failed");
-	//}
-	//retval_6 = my_connect_1(my_connect_1_user_name, my_connect_1_clientip, my_connect_1_client_port, &result_6, clnt);
-	//if (retval_6 != RPC_SUCCESS) {
-	//	clnt_perror (clnt, "call failed");
-	//}
-	//retval_7 = disconnect_1(disconnect_1_user_name, &result_7, clnt);
-	//if (retval_7 != RPC_SUCCESS) {
-	//	clnt_perror (clnt, "call failed");
-	//}
+	retval_3 = unregister_1(unregister_1_user_name, &result_3, clnt);
+	if (retval_3 != RPC_SUCCESS) {
+		clnt_perror (clnt, "call failed");
+	}
+	retval_4 = publish_1(publish_1_user_name, publish_1_file_name, publish_1_file_description, &result_4, clnt);
+	if (retval_4 != RPC_SUCCESS) {
+		clnt_perror (clnt, "call failed");
+	}
+	retval_5 = my_delete_1(my_delete_1_user_name, my_delete_1_file_name, &result_5, clnt);
+	if (retval_5 != RPC_SUCCESS) {
+		clnt_perror (clnt, "call failed");
+	}
+	retval_6 = my_connect_1(my_connect_1_user_name, my_connect_1_clientip, my_connect_1_client_port, &result_6, clnt);
+	if (retval_6 != RPC_SUCCESS) {
+		clnt_perror (clnt, "call failed");
+	}
+	retval_7 = disconnect_1(disconnect_1_user_name, &result_7, clnt);
+	if (retval_7 != RPC_SUCCESS) {
+		clnt_perror (clnt, "call failed");
+	}
+	retval_8 = list_users_1(list_users_1_user_name, &result_8, clnt);
+	if (retval_8 != RPC_SUCCESS) {
+		clnt_perror (clnt, "call failed");
+	}
+	retval_9 = list_content_1(list_content_1_user_name, &result_9, clnt);
+	if (retval_9 != RPC_SUCCESS) {
+		clnt_perror (clnt, "call failed");
+	}
 #ifndef	DEBUG
 	clnt_destroy (clnt);
 #endif	 /* DEBUG */
