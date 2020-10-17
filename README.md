@@ -14,7 +14,7 @@ Clone the repository
 ```bash
 git clone https://github.com/adrihacar/p2p-system.git
 ```
-run **make** to compile the project
+Run **make** to compile the project
 ```bash
 cd .p2p-system 
 make
